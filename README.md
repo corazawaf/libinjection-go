@@ -4,7 +4,7 @@ libinjection-golang is a Go porting of the libinjection([http://www.client9.com/
 Completely rewritten at 12/2021.
 
 ## How to use
-###SQLi Example
+### SQLi Example
 ```go
 
 ```
@@ -16,10 +16,14 @@ Completely rewritten at 12/2021.
 
 ## Benchmark
 ### SQLi benchmark
+```go
 
+```
 
 ### XSS benchmark
+```go
 
+```
 
 ## License
 libinjection-golang is distributed under the same license as libinjection.
