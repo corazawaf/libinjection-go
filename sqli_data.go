@@ -126,7 +126,7 @@ func parseWord(s *sqliState) int {
 			ch := s.lookup(lookupWord, s.current.val[:], i)
 			if ch != sqliTokenTypeNone && ch != sqliTokenTypeBareWord {
 				// needed for swig
-				s.current = new(sqliToken)
+				*s.current = sqliToken{}
 
 				// we got something like "SELECT.1"
 				// or SELECT `column`

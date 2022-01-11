@@ -17,10 +17,10 @@ const (
 )
 
 const (
-	byteNull   = '\000'
-	byteSingle = '\''
-	byteDouble = '"'
-	byteTick   = '`'
+	byteNull   uint8 = '\000'
+	byteSingle       = '\''
+	byteDouble       = '"'
+	byteTick         = '`'
 )
 
 const (

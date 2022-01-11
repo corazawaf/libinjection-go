@@ -1,6 +1,8 @@
 package libinjection
 
-import "strings"
+import (
+	"strings"
+)
 
 func flag2Delimiter(flag int) byte {
 	if (flag & sqliFlagQuoteSingle) != 0 {
@@ -88,18 +90,11 @@ func isMysqlComment(s string, pos int) bool {
 	return true
 }
 
-func toUpperCmp(a, b string) int {
-	length := len(a) - len(b)
-	if length > 0 {
-		return length
-	} else if length < 0 {
-		return -1
-	}
-
-	if strings.ToUpper(a) == strings.ToUpper(b) {
-		return 0
+func toUpperCmp(a, b string) bool {
+	if a == strings.ToUpper(b) {
+		return true
 	} else {
-		return 1
+		return false
 	}
 }
 

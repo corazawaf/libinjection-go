@@ -105,7 +105,7 @@ func (t *sqliToken) isUnaryOp() bool {
 	case 2:
 		return t.val[0] == '!' && t.val[1] == '!'
 	case 3:
-		return toUpperCmp("NOT", string(t.val[:3])) == 0
+		return toUpperCmp("NOT", string(t.val[:3]))
 	default:
 		return false
 	}

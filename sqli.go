@@ -22,19 +22,18 @@ type sqliState struct {
 	pos int
 
 	// tokenVec, max tokens+1 since we use one extra token to determine the type of the previous token
-	tokenVec []sqliToken
+	tokenVec [8]sqliToken
 
 	// pointer to token position in tokenVec, above
 	current *sqliToken
 
 	// fingerprint pattern c-string, +1 form ending null
-	fingerprint []byte
+	fingerprint [8]byte
 
-	// MYSQL与标准SQL注释的区别
 	// |----------------------------------------|
-	// |区别/注释方式 |/**/	|--[start]      |#  |
+	// |            |/**/	|--[start]      |#  |
 	// |------------|-------|---------------|---|
-	// |标准SQL	    |ok	    |ok	            |no |
+	// |ANSI SQL	|ok	    |ok	            |no |
 	// |------------|-------|---------------|---|
 	// |MYSQL       |ok     |--[whitespace] |ok |
 	// |----------------------------------------|
@@ -76,18 +75,18 @@ type sqliState struct {
 // 		    single quote.
 //      ByteDouble ("), process pretending input started with a
 //          double quote.
-func (s *sqliState) sqliFingerprint(flags int) []byte {
+func (s *sqliState) sqliFingerprint(flags int) [8]byte {
 	s.reset(flags)
 
 	length := s.fold()
 
 	// check for magic PHP backquote comment
 	// If:
-	// 	last token is of type "bareword"
-	// 	And is quoted in a backtick
-	// 	And isn't closed
-	// 	And it's empty?
-	// 	Then convert it to comment
+	//     last token is of type "bareword"
+	//     And is quoted in a backtick
+	//     And isn't closed
+	//     And it's empty?
+	//     Then convert it to comment
 	if length > 2 &&
 		s.tokenVec[length-1].category == sqliTokenTypeBareWord &&
 		s.tokenVec[length-1].strOpen == byteSingle &&
@@ -183,7 +182,7 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 // parses and folds input, up to 5 tokens
 func (s *sqliState) fold() int {
 	var (
-		pos         = 0 // pso is the position of where whe Next token goes
+		pos         = 0 // pos is the position of where whe Next token goes
 		left        = 0 // left is a count of how many tokens that are already folded or processed(i.e. part of the fingerprint)
 		more        = true
 		lastComment = new(sqliToken)
@@ -243,7 +242,7 @@ func (s *sqliState) fold() int {
 			}
 		}
 
-		if !more || left > maxTokens {
+		if !more || left >= maxTokens {
 			left = pos
 			break
 		}
@@ -318,32 +317,32 @@ func (s *sqliState) fold() int {
 		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord || s.tokenVec[left].category == sqliTokenTypeVariable) &&
 			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis &&
 			( // TSQL functions but common enough to be column names
-			toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
+				toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-				// Function in MySQL
-				toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
+					// Function in MySQL
+					toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-				// MySQL words that act as a variable and are a function
+					// MySQL words that act as a variable and are a function
 
-				// TSQL current_users is fake_variable
-				// http://msdn.microsoft.com/en-us/library/ms176050.aspx
-				toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0) {
+					// TSQL current_users is fake_variable
+					// http://msdn.microsoft.com/en-us/library/ms176050.aspx
+					toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
 			// pos is the same
 			// other conversions need to go here... for instance
 			// password CAN be a function, coalesce CAN be a funtion
 			s.tokenVec[left].category = sqliTokenTypeFunction
 			continue
 		} else if s.tokenVec[left].category == sqliTokenTypeKeyword &&
-			(toUpperCmp("IN", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("NOT IN", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0) {
+			(toUpperCmp("IN", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("NOT IN", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
 			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
 				// got ... IN ( ... (or 'NOT IN')
 				// it's an operator
@@ -364,8 +363,8 @@ func (s *sqliState) fold() int {
 			// "foo" = LIKE(1,2)
 			continue
 		} else if s.tokenVec[left].category == sqliTokenTypeOperator &&
-			(toUpperCmp("LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 ||
-				toUpperCmp("NOT LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0) {
+			(toUpperCmp("LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("NOT LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
 			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
 				// SELECT LIKE(...
 				// it's a function
@@ -617,7 +616,7 @@ func (s *sqliState) fold() int {
 			// if we get User(foo), then User is not a function
 			// This should be expanded since it eliminated a lot of false
 			// positives.
-			if toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) == 0 {
+			if toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) {
 				s.tokenVec[left].category = sqliTokenTypeBareWord
 			}
 		}
@@ -648,6 +647,7 @@ func (s *sqliState) tokenize() bool {
 	if s.length == 0 {
 		return false
 	}
+	*s.current = sqliToken{}
 
 	// if we are at beginning of string and in single quote or double quote mode
 	// then pretend the input starts with a quote
@@ -675,11 +675,18 @@ func (s *sqliState) tokenize() bool {
 
 func (s *sqliState) blacklist() bool {
 	var (
-		fp []byte
+		fp = make([]byte, 8)
 		i  = 0
 	)
 
-	length := len(s.fingerprint)
+	length := 0
+	for i := 0; i < 8; i++ {
+		if s.fingerprint[i] != 0 {
+			length += 1
+		} else {
+			break
+		}
+	}
 	if length < 1 {
 		return false
 	}
@@ -704,7 +711,15 @@ func (s *sqliState) blacklist() bool {
 func (s *sqliState) notWhitelist() bool {
 	// We assume we got a SQLi match
 	// This next part just helps reduce false positives
-	length := len(s.fingerprint)
+	length := 0
+	for i := 0; i < 8; i++ {
+		if s.fingerprint[i] != 0 {
+			length += 1
+		} else {
+			break
+		}
+	}
+
 	if length > 1 && s.fingerprint[length-1] == sqliTokenTypeComment {
 		// if ending comment is contains 'sp_password' then it's SQLi!
 		// MS Audit log apparently ignores anything with
@@ -794,7 +809,7 @@ func (s *sqliState) notWhitelist() bool {
 		// ...foo' + 'bar...
 		// no opening quote, no closing quote
 		// and each string has data
-		if string(s.fingerprint) == "sos" || string(s.fingerprint) == "s&s" {
+		if string(s.fingerprint[:]) == "sos" || string(s.fingerprint[:]) == "s&s" {
 			if s.tokenVec[0].strOpen == byteNull &&
 				s.tokenVec[2].strClose == byteNull &&
 				s.tokenVec[0].strClose == s.tokenVec[2].strOpen {
@@ -807,18 +822,18 @@ func (s *sqliState) notWhitelist() bool {
 			}
 
 			return false
-		} else if string(s.fingerprint) == "s&n" ||
-			string(s.fingerprint) == "n&1" ||
-			string(s.fingerprint) == "1&1" ||
-			string(s.fingerprint) == "1&v" ||
-			string(s.fingerprint) == "1&s" {
+		} else if string(s.fingerprint[:]) == "s&n" ||
+			string(s.fingerprint[:]) == "n&1" ||
+			string(s.fingerprint[:]) == "1&1" ||
+			string(s.fingerprint[:]) == "1&v" ||
+			string(s.fingerprint[:]) == "1&s" {
 			// 'sexy and 17' not SQLi
 			// 'sexy and 17<18' SQLi
 			if s.statsTokens == 3 {
 				return false
 			}
 		} else if s.tokenVec[1].category == sqliTokenTypeKeyword {
-			if s.tokenVec[1].len < 5 || toUpperCmp("INTO", string(s.tokenVec[1].val[:4])) != 0 {
+			if s.tokenVec[1].len < 5 || !toUpperCmp("INTO", string(s.tokenVec[1].val[:4])) {
 				// if it's not "INTO OUTFILE", or "INTO DUMPFILE" (MySQL)
 				// then treat as safe
 			}
@@ -855,8 +870,6 @@ func (s *sqliState) init(input string, flags int) {
 	s.lookup = s.lookupWord
 	s.flags = flags
 	s.current = &s.tokenVec[0]
-	s.fingerprint = make([]byte, 0, 8)
-	s.tokenVec = make([]sqliToken, 0, 8)
 }
 
 func (s *sqliState) reset(flags int) {
@@ -918,16 +931,14 @@ func (s *sqliState) check() bool {
 	return false
 }
 
-func IsSQLi(input string) (bool, []byte) {
-	var fingerprint []byte
+func IsSQLi(input string) (bool, [8]byte) {
+	var fingerprint [8]byte
 	state := new(sqliState)
 	state.init(input, 0)
 
 	result := state.check()
 	if result {
 		fingerprint = state.fingerprint
-	} else {
-		fingerprint[0] = byteNull
 	}
 
 	return result, fingerprint

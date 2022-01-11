@@ -1,12 +1,10 @@
-# libinjection-golang
-
-libinjection-golang is a Go porting of the libinjection([http://www.client9.com/projects/libinjection/](http://www.client9.com/projects/libinjection/)).
-Completely rewritten at 12/2021.
+# libinjection
+libinjection is a Go porting of the libinjection([http://www.client9.com/projects/libinjection/](http://www.client9.com/projects/libinjection/)).
 
 ## How to use
 ### SQLi Example
 ```go
-
+result, fingerprint := libinjection.IsSQLi("' OR '1'='1' --")
 ```
 
 ### XSS Example
