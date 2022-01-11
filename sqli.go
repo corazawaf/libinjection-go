@@ -171,7 +171,7 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 	copy(tmp[tokenA.len+1:], tokenB.val[:])
 	tmp[tokenA.len+tokenB.len+1] = byteNull
 
-	ch := s.lookup(lookupWord, tmp[:], tokenA.len+tokenB.len+1)
+	ch := s.lookup(sqliLookupWord, tmp[:], tokenA.len+tokenB.len+1)
 	if ch != byteNull {
 		return true
 	} else {
@@ -317,24 +317,24 @@ func (s *sqliState) fold() int {
 		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord || s.tokenVec[left].category == sqliTokenTypeVariable) &&
 			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis &&
 			( // TSQL functions but common enough to be column names
-				toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+			toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-					// Function in MySQL
-					toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				// Function in MySQL
+				toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-					// MySQL words that act as a variable and are a function
+				// MySQL words that act as a variable and are a function
 
-					// TSQL current_users is fake_variable
-					// http://msdn.microsoft.com/en-us/library/ms176050.aspx
-					toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-					toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
+				// TSQL current_users is fake_variable
+				// http://msdn.microsoft.com/en-us/library/ms176050.aspx
+				toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
 			// pos is the same
 			// other conversions need to go here... for instance
 			// password CAN be a function, coalesce CAN be a funtion
@@ -849,7 +849,7 @@ func (s *sqliState) checkFingerprint() bool {
 }
 
 func (s *sqliState) lookupWord(lookupType int, word []byte, length int) byte {
-	if lookupType == lookupFingerprint {
+	if lookupType == sqliLookupFingerprint {
 		if s.checkFingerprint() {
 			return 'X'
 		} else {
@@ -895,11 +895,11 @@ func (s *sqliState) check() bool {
 
 	// test input "as-is"
 	s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLAnsi)
-	if s.lookup(lookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
+	if s.lookup(sqliLookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
 		return true
 	} else if s.reparseAsMySQL() {
 		s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLMysql)
-		if s.lookup(lookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
 			return true
 		}
 	}
@@ -909,11 +909,11 @@ func (s *sqliState) check() bool {
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
 	if strings.ContainsRune(s.input, byteSingle) {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
-		if s.lookup(lookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
 			return true
 		} else if s.reparseAsMySQL() {
 			s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLMysql)
-			if s.lookup(lookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
+			if s.lookup(sqliLookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
 				return true
 			}
 		}
@@ -922,7 +922,7 @@ func (s *sqliState) check() bool {
 	// same as above but with a double quote
 	if strings.ContainsRune(s.input, byteDouble) {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
-		if s.lookup(lookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint[:], len(s.fingerprint)) != byteNull {
 			return true
 		}
 	}

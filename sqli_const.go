@@ -10,14 +10,14 @@ const (
 )
 
 const (
-	lookupWord        = 1
-	lookupType        = 2
-	lookupOperator    = 3
-	lookupFingerprint = 4
+	sqliLookupWord        = 1
+	sqliLookupType        = 2
+	sqliLookupOperator    = 3
+	sqliLookupFingerprint = 4
 )
 
 const (
-	byteNull   uint8 = '\000'
+	byteNull   uint8 = 0
 	byteSingle       = '\''
 	byteDouble       = '"'
 	byteTick         = '`'

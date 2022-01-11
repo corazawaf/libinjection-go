@@ -27,7 +27,7 @@ func isBackslashEscaped(str string) bool {
 		}
 	}
 	// if number of backslashes is odd, it is escaped
-	return count%2 != 1
+	return count%2 == 0
 }
 
 func isDoubleDelimiterEscaped(str string) bool {
@@ -50,9 +50,19 @@ func isByteWhite(ch byte) bool {
 //
 // if accept is "ABC", then this function would be similar to
 // regexp.match(str, "[ABC]*")
-func indexOfLargestStr(s string, length int, accept string) int {
+func strLenSpn(s string, length int, accept string) int {
 	for i := 0; i < length; i++ {
 		if !strings.ContainsRune(accept, rune(s[i])) {
+			return i
+		}
+	}
+
+	return length
+}
+
+func strLenCSpn(s string, length int, accept string) int {
+	for i := 0; i < length; i++ {
+		if strings.ContainsRune(accept, rune(s[i])) {
 			return i
 		}
 	}
@@ -82,7 +92,6 @@ func isMysqlComment(s string, pos int) bool {
 		return false
 	}
 
-	// TODO I don't agree this statement.
 	if s[pos+2] != '!' {
 		return false
 	}
