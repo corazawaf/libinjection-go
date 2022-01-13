@@ -317,24 +317,24 @@ func (s *sqliState) fold() int {
 		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord || s.tokenVec[left].category == sqliTokenTypeVariable) &&
 			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis &&
 			( // TSQL functions but common enough to be column names
-			toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+				toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("USER_NAME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-				// Function in MySQL
-				toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					// Function in MySQL
+					toUpperCmp("DATABASE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("PASSWORD", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 
-				// MySQL words that act as a variable and are a function
+					// MySQL words that act as a variable and are a function
 
-				// TSQL current_users is fake_variable
-				// http://msdn.microsoft.com/en-us/library/ms176050.aspx
-				toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
+					// TSQL current_users is fake_variable
+					// http://msdn.microsoft.com/en-us/library/ms176050.aspx
+					toUpperCmp("CURRENT_USER", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_DATE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
+					toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
 			// pos is the same
 			// other conversions need to go here... for instance
 			// password CAN be a function, coalesce CAN be a funtion
@@ -892,6 +892,8 @@ func (s *sqliState) check() bool {
 	if s.length == 0 {
 		return false
 	}
+
+	// todo: wait to analysis
 
 	// test input "as-is"
 	s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLAnsi)
