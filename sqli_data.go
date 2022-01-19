@@ -34,7 +34,7 @@ func parseQStringCore(s *sqliState, offset int) int {
 		ch = '>'
 	}
 
-	index := strings.Index(s.input[pos+3:], string(ch+byteSingle))
+	index := strings.Index(s.input[pos+3:], string(ch)+string(byteSingle))
 	if index == -1 {
 		s.current.assign(sqliTokenTypeString, pos+3, s.length-pos-3, s.input[pos+3:])
 		s.current.strOpen = 'q'

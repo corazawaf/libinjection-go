@@ -11,8 +11,8 @@ func parseEolComment(s *sqliState) int {
 		s.current.assign(sqliTokenTypeComment, s.pos, s.length-s.pos, s.input[s.pos:])
 		return s.length
 	} else {
-		s.current.assign(sqliTokenTypeComment, s.pos, index+s.pos, s.input[s.pos:])
-		return index + s.pos + 1
+		s.current.assign(sqliTokenTypeComment, s.pos, index, s.input[s.pos:])
+		return s.pos + index + 1
 	}
 }
 
@@ -38,7 +38,7 @@ func parseMoney(s *sqliState) int {
 				s.current.assign(sqliTokenTypeString, s.pos+2, index, s.input[s.pos+2:])
 				s.current.strOpen = '$'
 				s.current.strClose = '$'
-				return index + 2 + s.pos + 2
+				return s.pos + 2 + index + 2
 			}
 		} else {
 			// ok it's not a number or '$$', but maybe it's pgsql "$ quoted strings"
@@ -57,7 +57,7 @@ func parseMoney(s *sqliState) int {
 			}
 
 			// we have $foobar$ ... find it again
-			index := strings.Index(s.input[s.pos+xlen+2:], s.input[s.pos:s.pos+xlen+2+1])
+			index := strings.Index(s.input[s.pos+xlen+2:], s.input[s.pos:s.pos+xlen+2])
 			if index == -1 {
 				s.current.assign(sqliTokenTypeString, s.pos+xlen+2, s.length-s.pos-xlen-2, s.input[s.pos+xlen+2:])
 				s.current.strOpen = '$'
@@ -146,7 +146,7 @@ func parseSlash(s *sqliState) int {
 	if index == -1 {
 		length = s.length - s.pos
 	} else {
-		length = index + 2 + s.pos + 2
+		length = 2 + index + 2
 	}
 
 	// postgresql allows nested comments which makes
@@ -189,7 +189,7 @@ func parseOperator2(s *sqliState) int {
 		return s.pos + 3
 	}
 
-	ch := s.lookup(sqliLookupOperator, []byte(s.input[s.pos:]), 2)
+	ch := s.lookup(sqliLookupOperator, []byte(s.input[s.pos:s.pos+2]))
 	if ch != byteNull {
 		s.current.assign(ch, s.pos, 2, s.input[s.pos:])
 		return s.pos + 2
@@ -220,11 +220,9 @@ func parseWord(s *sqliState) int {
 	for i := 0; i < s.current.len; i++ {
 		delimiter := s.current.val[i]
 		if delimiter == '.' || delimiter == '`' {
-			ch := s.lookup(sqliLookupWord, s.current.val[:], i)
+			ch := s.lookup(sqliLookupWord, s.current.val[:i])
 			if ch != sqliTokenTypeNone && ch != sqliTokenTypeBareWord {
-				// needed for swig todo: need to analysis
 				*s.current = sqliToken{}
-
 				// we got something like "SELECT.1"
 				// or SELECT `column`
 				s.current.assign(ch, s.pos, i, s.input[s.pos:])
@@ -235,7 +233,7 @@ func parseWord(s *sqliState) int {
 
 	// do normal lookup with word including '.'
 	if length < tokenSize {
-		ch := s.lookup(sqliLookupWord, s.current.val[:], length)
+		ch := s.lookup(sqliLookupWord, s.current.val[:length])
 		if ch == byteNull {
 			ch = sqliTokenTypeBareWord
 		}
@@ -326,7 +324,7 @@ func parseNumber(s *sqliState) int {
 
 		if pos-start == 1 {
 			// only one character read so far
-			s.current.assignByte(sqliTokenTypeDot, s.pos, 1, '.')
+			s.current.assignByte(sqliTokenTypeDot, start, 1, '.')
 			return pos
 		}
 	}
@@ -367,7 +365,7 @@ func parseNumber(s *sqliState) int {
 
 	if haveE == 1 && haveExp == 0 {
 		// very special form of
-		// "1234.e" "10.10E" ".E"
+		// "1234.e" "10.10E" ".E" "1e+"
 		// this is a WORD not a number
 		s.current.assign(sqliTokenTypeBareWord, start, pos-start, s.input[start:])
 	} else {
@@ -387,7 +385,7 @@ func parseTick(s *sqliState) int {
 	//
 	// check value of string to see if it's a keyword,
 	// function, operator, etc
-	ch := s.lookup(sqliLookupWord, s.current.val[:], s.current.len)
+	ch := s.lookup(sqliLookupWord, s.current.val[:s.current.len])
 	if ch == sqliTokenTypeFunction {
 		// if it's a function, then covert token
 		s.current.category = sqliTokenTypeFunction
@@ -455,7 +453,7 @@ func parseBString(s *sqliState) int {
 	// need at least 3 characters
 	// if next byte isn't a single quote, then
 	// continue as normal word
-	if s.pos+2 >= s.length || s.input[s.pos] != byteSingle {
+	if s.pos+2 >= s.length || s.input[s.pos+1] != byteSingle {
 		return parseWord(s)
 	}
 
@@ -467,7 +465,7 @@ func parseBString(s *sqliState) int {
 	return s.pos + 2 + length + 1
 }
 
-// used when first byte is:
+// used when first byte is E or e:
 //		N or n: mysql "National Character set"
 // 		E     : psql  "Escaped String"
 func parseEString(s *sqliState) int {

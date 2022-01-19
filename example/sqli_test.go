@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsSQLi(t *testing.T) {
-	result, fingerprint := libinjection.IsSQLi("' OR '1'='1' --")
+	result, fingerprint := libinjection.IsSQLi("-1' and 1=1 union/* foo */select load_file('/etc/passwd')--")
 	fmt.Println("=========result==========: ", result)
-	fmt.Println("=======fingerprint=======: ", fingerprint[:])
+	fmt.Println("=======fingerprint=======: ", string(fingerprint[:]))
 }

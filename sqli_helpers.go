@@ -18,8 +18,12 @@ func flag2Delimiter(flag int) byte {
 // 	   "   \\"	" two backslash = not escaped!
 //     "  \\\"	" three backslash = escaped!
 func isBackslashEscaped(str string) bool {
+	if !strings.ContainsRune(str, '\\') {
+		return false
+	}
+
 	var count = 0
-	for i := len(str) - 1; i >= 0; i++ {
+	for i := len(str) - 1; i >= 0; i-- {
 		if str[i] == '\\' {
 			count += 1
 		} else {

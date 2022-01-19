@@ -1,5 +1,7 @@
 package libinjection
 
+import "strings"
+
 type sqliToken struct {
 	// position and length of token in original string
 	pos int
@@ -27,15 +29,10 @@ const (
 // since it's the wrong or EOL
 func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter byte) int {
 	// offset is to skip the perhaps first quote char
-	str := ""
-	flag := 0
-	for i := 0; i < length-pos-offset; i++ {
-		if s[i+pos+offset] == delimiter {
-			str = s[i+pos+offset:]
-			flag = i + pos + offset
-			break
-		}
-	}
+	var (
+		str  = s[pos+offset:]
+		flag = 0
+	)
 
 	if offset > 0 {
 		// this is real quote
@@ -46,7 +43,13 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 	}
 
 	for {
-		if len(str) == 0 {
+		index := strings.IndexByte(str, delimiter)
+		if index != -1 {
+			flag = pos + offset + index
+			str = s[flag:]
+		}
+
+		if index == -1 {
 			// string ended with no trailing quote
 			// assign what we have
 			t.assign(sqliTokenTypeString, pos+offset, length-pos-offset, s[pos+offset:])
@@ -62,7 +65,7 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 			continue
 		} else {
 			// hey it's a normal string
-			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str), s[pos+offset:])
+			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str)+1, s[pos+offset:])
 			t.strClose = delimiter
 			return len(s) - len(str) + 1
 		}
@@ -83,7 +86,6 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	for i := 0; i < last; i++ {
 		t.val[i] = value[i]
 	}
-	t.val[last] = byteNull
 }
 
 func (t *sqliToken) assignByte(tokenType byte, pos, len int, value byte) {
@@ -91,7 +93,6 @@ func (t *sqliToken) assignByte(tokenType byte, pos, len int, value byte) {
 	t.pos = pos
 	t.len = 1
 	t.val[0] = value
-	t.val[1] = byteNull
 }
 
 func (t *sqliToken) isUnaryOp() bool {
