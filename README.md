@@ -4,7 +4,18 @@ libinjection is a Go porting of the libinjection([http://www.client9.com/project
 ## How to use
 ### SQLi Example
 ```go
-result, fingerprint := libinjection.IsSQLi("' OR '1'='1' --")
+package main
+
+import (
+    "fmt"
+    "github.com/bxlxx/libinjection-go"
+)
+
+func main() {
+    result, fingerprint := libinjection.IsSQLi("-1' and 1=1 --")
+    fmt.Println("=========result==========: ", result)
+    fmt.Println("=======fingerprint=======: ", string(fingerprint[:]))
+}
 ```
 
 ### XSS Example
