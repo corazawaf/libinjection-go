@@ -30,8 +30,7 @@ const (
 func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter byte) int {
 	// offset is to skip the perhaps first quote char
 	var (
-		str  = s[pos+offset:]
-		flag = 0
+		str = s[pos+offset:]
 	)
 
 	if offset > 0 {
@@ -42,11 +41,11 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 		t.strOpen = byteNull
 	}
 
+	// todo: for bug
 	for {
 		index := strings.IndexByte(str, delimiter)
 		if index != -1 {
-			flag = pos + offset + index
-			str = s[flag:]
+			str = str[index:]
 		}
 
 		if index == -1 {
@@ -55,7 +54,7 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 			t.assign(sqliTokenTypeString, pos+offset, length-pos-offset, s[pos+offset:])
 			t.strClose = byteNull
 			return length
-		} else if isBackslashEscaped(s[pos+offset : flag]) {
+		} else if isBackslashEscaped(s[pos+offset : pos+offset+strings.Index(s[pos+offset:], str)]) {
 			// keep going, move ahead one character
 			str = str[1:]
 			continue
@@ -65,7 +64,7 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 			continue
 		} else {
 			// hey it's a normal string
-			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str)+1, s[pos+offset:])
+			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str), s[pos+offset:])
 			t.strClose = delimiter
 			return len(s) - len(str) + 1
 		}

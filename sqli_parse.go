@@ -157,7 +157,7 @@ func parseSlash(s *sqliState) int {
 	// Also, Mysql's "conditional" comments for version
 	// are an automatic black ban!
 	if index != -1 &&
-		strings.Index(s.input[s.pos+2:s.pos+2+index], "/*") != -1 {
+		strings.Index(s.input[s.pos+2:s.pos+2+index+1], "/*") != -1 {
 		ctype = sqliTokenTypeEvil
 	} else if isMysqlComment(s.input, s.pos) {
 		ctype = sqliTokenTypeEvil

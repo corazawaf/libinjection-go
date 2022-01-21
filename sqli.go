@@ -118,11 +118,12 @@ func (s *sqliState) sqliFingerprint(flags int) []byte {
 	// accurately due to pgsql's double comments
 	// or other syntax that isn't consistent.
 	// Should be very rare false positive
-	if bytes.ContainsRune(s.fingerprint[:], rune(sqliTokenTypeEvil)) {
-		s.fingerprint[0] = sqliTokenTypeEvil
+	if bytes.ContainsAny(s.fingerprint[:], string(sqliTokenTypeEvil)) {
+		s.fingerprint = s.fingerprint[:0]
+		s.fingerprint = append(s.fingerprint, sqliTokenTypeEvil)
+
 		s.tokenVec[0].category = sqliTokenTypeEvil
-		s.tokenVec[0].val[0] = sqliTokenTypeEvil
-		s.tokenVec[1].category = byteNull
+		s.tokenVec[0].val = [32]byte{sqliTokenTypeEvil}
 	}
 
 	return s.fingerprint
@@ -168,13 +169,14 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 
 	// oddly annoying last.val + ' ' + current.val
 	var tmp [tokenSize]byte
-	copy(tmp[:], tokenA.val[:])
+	copy(tmp[:], tokenA.val[:tokenA.len])
 	tmp[tokenA.len] = ' '
-	copy(tmp[tokenA.len+1:], tokenB.val[:])
-	tmp[tokenA.len+tokenB.len+1] = byteNull
+	copy(tmp[tokenA.len+1:], tokenB.val[:tokenB.len])
 
-	ch := s.lookup(sqliLookupWord, tmp[:])
+	length := tokenA.len + tokenB.len + 1
+	ch := s.lookup(sqliLookupWord, tmp[:length])
 	if ch != byteNull {
+		tokenA.assign(ch, tokenA.pos, length, string(tmp[:length]))
 		return true
 	} else {
 		return false
@@ -913,5 +915,10 @@ func (s *sqliState) check() bool {
 func IsSQLi(input string) (bool, []byte) {
 	state := new(sqliState)
 	sqliInit(state, input, 0)
-	return state.check(), state.fingerprint
+	result := state.check()
+	if result {
+		return result, state.fingerprint
+	} else {
+		return result, []byte{}
+	}
 }
