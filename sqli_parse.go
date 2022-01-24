@@ -334,7 +334,7 @@ func parseNumber(s *sqliState) int {
 			haveE = 1
 			pos += 1
 
-			if pos < s.length && (s.input[s.pos] == '+' || s.input[s.pos] == '-') {
+			if pos < s.length && (s.input[pos] == '+' || s.input[pos] == '-') {
 				pos += 1
 			}
 

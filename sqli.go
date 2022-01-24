@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const version = "3.9.2"
+
 type lookup func(lookupType int, word []byte) byte
 
 type sqliState struct {
@@ -266,7 +268,7 @@ func (s *sqliState) fold() int {
 		}
 
 		// did we get 2 tokens? if not then we are done
-		if pos-left > 2 {
+		if pos-left < 2 {
 			left = pos
 			continue
 		}
@@ -517,7 +519,7 @@ func (s *sqliState) fold() int {
 			s.tokenVec[left].category == sqliTokenTypeVariable ||
 			s.tokenVec[left].category == sqliTokenTypeString) &&
 			s.tokenVec[left+1].category == sqliTokenTypeOperator &&
-			string(s.tokenVec[left+1].val[:]) == "::" &&
+			string(s.tokenVec[left+1].val[:s.tokenVec[left+1].len]) == "::" &&
 			s.tokenVec[left+2].category == sqliTokenTypeSQLType {
 			pos -= 2
 			left = 0

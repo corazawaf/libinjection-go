@@ -12,7 +12,7 @@ import (
 )
 
 func TestIsSQLi(t *testing.T) {
-	result, fingerprint := IsSQLi("1\" UNION ALL SELECT --1 FROM FOO")
+	result, fingerprint := IsSQLi("1�UNION�SELECT�2--")
 	fmt.Println("=========result==========: ", result)
 	fmt.Println("=======fingerprint=======: ", string(fingerprint[:]))
 }
@@ -76,7 +76,7 @@ func readTestData(filename string) map[string]string {
 		state = ""
 	)
 
-	br := bufio.NewReader(f)
+	br := bufio.NewReaderSize(f, 8192)
 	for {
 		line, _, err := br.ReadLine()
 		if err != nil {

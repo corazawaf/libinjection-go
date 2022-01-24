@@ -16,7 +16,7 @@ func parseQStringCore(s *sqliState, offset int) int {
 		return parseWord(s)
 	}
 
-	ch := s.input[s.pos+2]
+	ch := s.input[pos+2]
 	// the ch >127 is un-needed since
 	// we assume char is signed
 	if ch < 33 {

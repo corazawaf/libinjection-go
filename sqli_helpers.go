@@ -31,11 +31,11 @@ func isBackslashEscaped(str string) bool {
 		}
 	}
 	// if number of backslashes is odd, it is escaped
-	return count%2 == 0
+	return count%2 != 0
 }
 
 func isDoubleDelimiterEscaped(str string) bool {
-	return len(str) >= 3 && str[0] == str[1]
+	return len(str) >= 2 && str[0] == str[1]
 }
 
 func isByteWhite(ch byte) bool {

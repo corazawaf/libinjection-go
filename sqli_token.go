@@ -41,7 +41,6 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 		t.strOpen = byteNull
 	}
 
-	// todo: for bug
 	for {
 		index := strings.IndexByte(str, delimiter)
 		if index != -1 {
@@ -113,5 +112,5 @@ func (t *sqliToken) isUnaryOp() bool {
 
 func (t *sqliToken) isArithmeticOp() bool {
 	return t.category == sqliTokenTypeOperator && t.len == 1 &&
-		(t.val[0] == '*' || t.val[0] == '/' || t.val[0] == '+' || t.val[0] == '-')
+		(t.val[0] == '*' || t.val[0] == '/' || t.val[0] == '+' || t.val[0] == '-' || t.val[0] == '%')
 }
