@@ -23,16 +23,5 @@ func main() {
 
 ```
 
-## Benchmark
-### SQLi benchmark
-```go
-
-```
-
-### XSS benchmark
-```go
-
-```
-
 ## License
-libinjection-golang is distributed under the same license as libinjection.
+libinjection-golang is distributed under the same license as the [libinjection](http://www.client9.com/projects/libinjection/).
