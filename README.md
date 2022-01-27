@@ -33,4 +33,4 @@ func main() {
 ```
 
 ## License
-libinjection-golang is distributed under the same license as the [libinjection](http://www.client9.com/projects/libinjection/).
+libinjection-go is distributed under the same license as the [libinjection](http://www.client9.com/projects/libinjection/).
