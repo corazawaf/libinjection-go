@@ -1,9 +1,11 @@
 package libinjection
 
-import "strings"
+import (
+	"strings"
+)
 
 func isH5White(ch byte) bool {
-	if ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' {
+	if ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == ' ' {
 		return true
 	} else {
 		return false
@@ -63,13 +65,127 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
+func htmlDecodeByteAt(s string, consumed *int) int {
+	var (
+		length = len(s)
+		val    = 0
+		i      = 0
+	)
+
+	if length == 0 {
+		*consumed = 0
+		return byteEof
+	}
+
+	*consumed = 1
+	if s[0] != '&' || length < 2 {
+		return int(s[0])
+	}
+
+	if s[1] != '#' {
+		// normally this would be for named entities
+		// but for this case we don't actually care
+		return '&'
+	}
+
+	if s[2] == 'x' || s[2] == 'X' {
+		ch := int(s[3])
+		ch = gsHexDecodeMap[ch]
+		if ch == 256 {
+			// degenerate case '&#[?]'
+			return '&'
+		}
+		val = ch
+		i = 4
+
+		for i < length {
+			ch = int(s[i])
+			if ch == ';' {
+				*consumed = i + 1
+				return val
+			}
+			ch = gsHexDecodeMap[ch]
+			if ch == 256 {
+				*consumed = i
+				return val
+			}
+			val = val*16 + ch
+			if val > 0x1000FF {
+				return '&'
+			}
+			i += 1
+		}
+		*consumed = i
+		return val
+	} else {
+		i = 2
+		ch := int(s[i])
+		if ch < '0' || ch > '9' {
+			return '&'
+		}
+		val = ch - '0'
+		i += 1
+		for i < length {
+			ch = int(s[i])
+			if ch == ';' {
+				*consumed = i + 1
+				return val
+			}
+			if ch < '0' || ch > '9' {
+				*consumed = i
+				return val
+			}
+			val = val*10 + (ch - '0')
+			if val > 0x1000FF {
+				return '&'
+			}
+			i += 1
+		}
+		*consumed = i
+		return val
+	}
+}
+
 // Does an HTML encoded  binary string (const char*, length) start with
 // a all uppercase c-string (null terminated), case insensitive!
 //
 // also ignore any embedded nulls in the HTML string!
-// todo: implement
 func htmlEncodeStartsWith(a, b string) bool {
-	return false
+	var (
+		consumed = 0
+		first    = true
+		bs       []byte
+		pos      = 0
+		length   = len(b)
+	)
+
+	for length > 0 {
+		cb := htmlDecodeByteAt(b[pos:], &consumed)
+		pos += consumed
+		length -= consumed
+
+		if first && cb <= 32 {
+			// ignore all leading whitespace and control characters
+			continue
+		}
+		first = false
+
+		if cb == 0 || cb == 10 {
+			// always ignore null characters in user input
+			// always ignore vertical tab characters in user input
+			continue
+		}
+		if cb >= 'a' && cb <= 'z' {
+			cb -= 0x20
+		}
+		bs = append(bs, byte(cb))
+	}
+
+	if strings.Index(string(bs), a) != -1 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func isBlackUrl(s string) bool {
@@ -85,10 +201,9 @@ func isBlackUrl(s string) bool {
 	//  since they are not ASCII, and Opera sometimes uses UTF-8 whitespace.
 	//
 	//  Also in EUC-JP some of the high bytes are just ignored.
-	space := strings.TrimLeftFunc(s, func(r rune) bool {
+	str := strings.TrimLeftFunc(s, func(r rune) bool {
 		return r <= 32 || r >= 127
 	})
-	str := s[len(space):]
 
 	for _, url := range urls {
 		if htmlEncodeStartsWith(url, str) {

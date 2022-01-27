@@ -319,8 +319,6 @@ func parseByteFunctions(s *sqliState, parse byte) int {
 	}
 }
 
-// todo: fix it for thread-safe.
-
 type sqlKeyword struct {
 	k string
 	v byte

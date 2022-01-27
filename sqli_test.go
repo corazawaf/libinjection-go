@@ -23,7 +23,7 @@ const (
 	tokens       = "tokens"
 )
 
-var count = 0
+var sqliCount = 0
 
 func printTokenString(t *sqliToken) string {
 	out := ""
@@ -94,12 +94,13 @@ func readTestData(filename string) map[string]string {
 			data[state] += str + "\n"
 		}
 	}
+	data["--TEST--"] = strings.TrimSpace(data["--TEST--"])
 	data["--INPUT--"] = strings.TrimSpace(data["--INPUT--"])
 	data["--EXPECTED--"] = strings.TrimSpace(data["--EXPECTED--"])
 	return data
 }
 
-func runTest(filename, flag string, sqliFlag int) {
+func runSQLiTest(filename, flag string, sqliFlag int) {
 	var (
 		actual = ""
 		data   = readTestData(filename)
@@ -125,13 +126,11 @@ func runTest(filename, flag string, sqliFlag int) {
 		for state.tokenize() {
 			actual += printToken(state.current) + "\n"
 		}
-
-		actual = strings.TrimSpace(actual)
 	}
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		count += 1
+		sqliCount += 1
 		fmt.Println("FILE: (" + filename + ")")
 		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
 		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
@@ -139,7 +138,7 @@ func runTest(filename, flag string, sqliFlag int) {
 	}
 }
 
-func TestDriver(t *testing.T) {
+func TestSQLiDriver(t *testing.T) {
 	baseDir := "./tests/"
 	dir, err := ioutil.ReadDir(baseDir)
 	if err != nil {
@@ -148,16 +147,15 @@ func TestDriver(t *testing.T) {
 
 	for _, fi := range dir {
 		if strings.Contains(fi.Name(), "-sqli-") {
-			runTest(baseDir+fi.Name(), fingerprints, 0)
+			runSQLiTest(baseDir+fi.Name(), fingerprints, 0)
 		} else if strings.Contains(fi.Name(), "-folding-") {
-			runTest(baseDir+fi.Name(), folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(baseDir+fi.Name(), folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		} else if strings.Contains(fi.Name(), "-tokens_mysql-") {
-			runTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
 		} else if strings.Contains(fi.Name(), "-tokens-") {
-			runTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
-		} else {
+			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		}
 	}
 
-	t.Log("False testing count: ", count)
+	t.Log("False testing count: ", sqliCount)
 }

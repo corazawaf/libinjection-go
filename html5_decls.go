@@ -4,7 +4,7 @@ const (
 	byteEof      = -1
 	byteBang     = 33
 	bytePercent  = 37
-	byteDash     = 39
+	byteDash     = 45
 	byteSlash    = 47
 	byteLT       = 60
 	byteEquals   = 61

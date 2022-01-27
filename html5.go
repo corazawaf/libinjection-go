@@ -10,12 +10,15 @@ func (h *h5State) skipWhite() int {
 		switch ch {
 		case 0x00, 0x20, 0x09, 0x0A, 0x0B, 0x0C, 0x0D:
 			h.pos += 1
-			break
 		default:
 			return int(ch)
 		}
 	}
 	return byteEof
+}
+
+func (h *h5State) stateEof() bool {
+	return false
 }
 
 // 12.2.4.44
@@ -25,7 +28,7 @@ func (h *h5State) stateBogusComment() bool {
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = h.len - h.pos
 		h.pos = h.len
-		h.state = nil
+		h.state = h.stateEof
 	} else {
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = index
@@ -47,11 +50,11 @@ func (h *h5State) stateBogusComment2() bool {
 			h.tokenLen = h.len - h.pos
 			h.pos = h.len
 			h.tokenType = html5TypeTagComment
-			h.state = nil
+			h.state = h.stateEof
 			return true
 		}
 
-		if h.s[h.pos+index] != byteGT {
+		if h.s[h.pos+index+1] != byteGT {
 			pos = pos + index + 1
 			continue
 		}
@@ -75,7 +78,6 @@ func (h *h5State) stateBogusComment2() bool {
 //   1) EOF
 //   2) ending in -->
 //   3) ending in -!>
-// todo: implement
 func (h *h5State) stateComment() bool {
 	var (
 		pos    = h.pos
@@ -87,13 +89,13 @@ func (h *h5State) stateComment() bool {
 
 		// did not find anything or has less than 3 characters
 		if index == -1 || pos+index+3 > h.len {
-			h.state = nil
+			h.state = h.stateEof
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
 			h.tokenType = html5TypeTagComment
 			return true
 		}
-		offset = 0
+		offset = 1
 
 		// skip all nulls
 		for pos+index+offset < h.len && h.s[pos+index+offset] == 0x00 {
@@ -101,7 +103,7 @@ func (h *h5State) stateComment() bool {
 		}
 
 		if pos+index+offset == h.len {
-			h.state = nil
+			h.state = h.stateEof
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
 			h.tokenType = html5TypeTagComment
@@ -116,7 +118,7 @@ func (h *h5State) stateComment() bool {
 		offset += 1
 
 		if pos+index+offset == h.len {
-			h.state = nil
+			h.state = h.stateEof
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
 			h.tokenType = html5TypeTagComment
@@ -131,7 +133,7 @@ func (h *h5State) stateComment() bool {
 
 		// ends in --> or -!>
 		h.tokenStart = h.s[h.pos:]
-		h.tokenLen = index
+		h.tokenLen = index + pos - h.pos
 		h.pos = pos + index + offset
 		h.state = h.stateData
 		h.tokenType = html5TypeTagComment
@@ -147,15 +149,15 @@ func (h *h5State) stateCData() bool {
 
 		// did not find anything or has less 3 chars left
 		if index == -1 || h.pos+index+3 > h.len {
-			h.state = nil
+			h.state = h.stateEof
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
 			h.tokenType = html5TypeDataText
 			return true
-		} else if h.s[h.pos+index+1] == byteRightB && h.s[h.pos+index+2] == byteGT {
+		} else if h.s[pos+index+1] == byteRightB && h.s[pos+index+2] == byteGT {
 			h.state = h.stateData
 			h.tokenStart = h.s[h.pos:]
-			h.tokenLen = index
+			h.tokenLen = pos + index - h.pos
 			h.pos = pos + index + 3
 			h.tokenType = html5TypeDataText
 			return true
@@ -172,7 +174,7 @@ func (h *h5State) stateDoctype() bool {
 
 	index := strings.IndexByte(h.s[h.pos:], byteGT)
 	if index == -1 {
-		h.state = nil
+		h.state = h.stateEof
 		h.tokenLen = h.len - h.pos
 	} else {
 		h.state = h.stateData
@@ -189,7 +191,7 @@ func (h *h5State) stateMarkupDeclarationOpen() bool {
 		strings.ToLower(h.s[h.pos:h.pos+7]) == "doctype" {
 		return h.stateDoctype()
 	} else if remaining >= 7 &&
-		h.s[h.pos:h.pos+7] == "[CDATA]" {
+		h.s[h.pos:h.pos+7] == "[CDATA[" {
 		h.pos += 7
 		return h.stateCData()
 	} else if remaining >= 2 &&
@@ -228,7 +230,7 @@ func (h *h5State) stateTagNameClose() bool {
 	if h.pos < h.len {
 		h.state = h.stateData
 	} else {
-		h.state = nil
+		h.state = h.stateEof
 	}
 	return true
 }
@@ -280,7 +282,7 @@ func (h *h5State) stateTagName() bool {
 	h.tokenStart = h.s[h.pos:]
 	h.tokenLen = h.len - h.pos
 	h.tokenType = html5TypeTagNameOpen
-	h.state = nil
+	h.state = h.stateEof
 	return true
 }
 
@@ -293,7 +295,7 @@ func (h *h5State) stateEndTagOpen() bool {
 	ch := h.s[h.pos]
 	if ch == byteGT {
 		return h.stateData()
-	} else if (ch >= 'a' && ch <= 'z') || (ch > 'A' && ch < 'Z') {
+	} else if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
 		return h.stateTagName()
 	}
 
@@ -322,7 +324,7 @@ func (h *h5State) stateTagOpen() bool {
 		// by IE <= 9 and Safari < 4.0.3
 		h.pos += 1
 		return h.stateBogusComment2()
-	} else if (ch > 'a' && ch < 'z') || (ch > 'A' && ch < 'Z') {
+	} else if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
 		return h.stateTagName()
 	} else if ch == byteNull {
 		// IE-ism NULL characters are ignored
@@ -347,7 +349,7 @@ func (h *h5State) stateData() bool {
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = h.len - h.pos
 		h.tokenType = html5TypeDataText
-		h.state = nil
+		h.state = h.stateEof
 		if h.tokenLen == 0 {
 			return false
 		}
@@ -390,7 +392,7 @@ func (h *h5State) stateAttributeValueNoQuote() bool {
 		pos += 1
 	}
 
-	h.state = nil
+	h.state = h.stateEof
 	h.tokenStart = h.s[h.pos:]
 	h.tokenLen = h.len - h.pos
 	h.tokenType = html5TypeAttrValue
@@ -402,7 +404,7 @@ func (h *h5State) stateBeforeAttributeValue() bool {
 	ch := h.skipWhite()
 
 	if ch == byteEof {
-		h.state = nil
+		h.state = h.stateEof
 		return false
 	}
 
@@ -483,7 +485,7 @@ func (h *h5State) stateAttributeName() bool {
 	h.tokenStart = h.s[h.pos:]
 	h.tokenLen = h.len - h.pos
 	h.tokenType = html5TypeAttrName
-	h.state = nil
+	h.state = h.stateEof
 	h.pos = h.len
 	return true
 }
@@ -514,7 +516,7 @@ func (h *h5State) stateBeforeAttributeName() bool {
 // 12.2.4.41
 func (h *h5State) stateAfterAttributeValueQuotedState() bool {
 	if h.pos >= h.len {
-		return true
+		return false
 	}
 
 	ch := h.s[h.pos]
@@ -541,7 +543,7 @@ func (h *h5State) stateAttributeValueQuote(ch byte) bool {
 	// don't do this "if (pos == 0)" since it means we have started
 	// in a non-data state.  given an input of '><foo
 	// we want to make 0-length attribute name
-	if h.pos == 0 {
+	if h.pos > 0 {
 		h.pos += 1
 	}
 
@@ -550,7 +552,7 @@ func (h *h5State) stateAttributeValueQuote(ch byte) bool {
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = h.len - h.pos
 		h.tokenType = html5TypeAttrValue
-		h.state = nil
+		h.state = h.stateEof
 	} else {
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = index
@@ -573,7 +575,7 @@ func (h *h5State) stateAttributeValueBackQuote() bool {
 	return h.stateAttributeValueQuote(byteTick)
 }
 
-func (h *h5State) init(input string, length, flags int) {
+func (h *h5State) init(input string, flags int) {
 	h.s = input
 	h.len = len(input)
 

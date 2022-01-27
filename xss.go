@@ -2,13 +2,13 @@ package libinjection
 
 import "strings"
 
-func isXss(input string, length, flags int) bool {
+func isXss(input string, flags int) bool {
 	var (
 		h5   = new(h5State)
 		attr = attributeTypeNone
 	)
 
-	h5.init(input, length, flags)
+	h5.init(input, flags)
 	for h5.next() {
 		if h5.tokenType != html5TypeAttrValue {
 			attr = attributeTypeNone
@@ -86,12 +86,11 @@ func isXss(input string, length, flags int) bool {
 }
 
 func IsXSS(input string) bool {
-	length := len(input)
-	if isXss(input, length, html5FlagsDataState) ||
-		isXss(input, length, html5FlagsValueNoQuote) ||
-		isXss(input, length, html5FlagsValueSingleQuote) ||
-		isXss(input, length, html5FlagsValueDoubleQuote) ||
-		isXss(input, length, html5FlagsValueBackQuote) {
+	if isXss(input, html5FlagsDataState) ||
+		isXss(input, html5FlagsValueNoQuote) ||
+		isXss(input, html5FlagsValueSingleQuote) ||
+		isXss(input, html5FlagsValueDoubleQuote) ||
+		isXss(input, html5FlagsValueBackQuote) {
 		return true
 	}
 

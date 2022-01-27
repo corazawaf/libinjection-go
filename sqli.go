@@ -427,7 +427,7 @@ func (s *sqliState) fold() int {
 			//
 			// select { ``.``.id }; -- valid!!
 			// select { ``.``.``.id }; --invalid
-			// select ``.``.id; --invalid     todo : this is valid
+			// select ``.``.id; --invalid     todo: this is valid
 			// select { ``.id }; --invalid
 			//
 			// so it appears {``.``.id} is a magic case
