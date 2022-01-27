@@ -1,5 +1,5 @@
 # libinjection
-libinjection is a Go porting of the libinjection([http://www.client9.com/projects/libinjection/](http://www.client9.com/projects/libinjection/)).
+libinjection is a Go porting of the libinjection([http://www.client9.com/projects/libinjection/](http://www.client9.com/projects/libinjection/)) and it's thread safe.
 
 ## How to use
 ### SQLi Example
@@ -20,7 +20,16 @@ func main() {
 
 ### XSS Example
 ```go
+package main
 
+import (
+	"fmt"
+	"github.com/bxlxx/libinjection-go"
+)
+
+func main() {
+	fmt.Println("result: ", libinjection.IsXSS("<script>alert('1')</script>"))
+}
 ```
 
 ## License

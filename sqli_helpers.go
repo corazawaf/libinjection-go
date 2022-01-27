@@ -115,10 +115,24 @@ func isKeyword(key []byte) byte {
 	return searchKeyword(key, sqlKeywords)
 }
 
-func searchKeyword(key []byte, keywords map[string]byte) byte {
-	if category, ok := keywords[strings.ToUpper(string(key))]; ok {
-		return category
-	} else {
-		return byteNull
+func searchKeyword(key []byte, keywords [sqlKeywordsLen]sqlKeyword) byte {
+	var (
+		left  = 0
+		right = sqlKeywordsLen - 1
+	)
+
+	for left < right {
+		pos := (left + right) >> 1
+
+		upperKey := strings.ToUpper(string(key))
+		if upperKey == keywords[pos].k {
+			return keywords[pos].v
+		} else if upperKey > keywords[pos].k {
+			left = pos + 1
+		} else {
+			right = pos
+		}
 	}
+
+	return byteNull
 }
