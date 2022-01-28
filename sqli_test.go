@@ -12,9 +12,9 @@ import (
 )
 
 func TestIsSQLi(t *testing.T) {
-	result, fingerprint := IsSQLi("1�UNION�SELECT�2--")
+	result, fingerprint := IsSQLi("-1' and 1=1 union/* foo */select load_file('/etc/passwd')--")
 	fmt.Println("=========result==========: ", result)
-	fmt.Println("=======fingerprint=======: ", string(fingerprint[:]))
+	fmt.Println("=======fingerprint=======: ", string(fingerprint))
 }
 
 const (

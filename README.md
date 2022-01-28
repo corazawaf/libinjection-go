@@ -12,9 +12,9 @@ import (
 )
 
 func main() {
-    result, fingerprint := libinjection.IsSQLi("-1' and 1=1 --")
+    result, fingerprint := libinjection.IsSQLi("-1' and 1=1 union/* foo */select load_file('/etc/passwd')--")
     fmt.Println("=========result==========: ", result)
-    fmt.Println("=======fingerprint=======: ", string(fingerprint[:]))
+    fmt.Println("=======fingerprint=======: ", string(fingerprint))
 }
 ```
 
