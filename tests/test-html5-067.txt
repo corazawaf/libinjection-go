@@ -1,5 +1,5 @@
 --TEST--
-test-bxlxx
+test-corazawaf
 --INPUT--
 <a href="  javascript:alert(1);" >
 --EXPECTED--

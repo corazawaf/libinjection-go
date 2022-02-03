@@ -8,7 +8,7 @@ package main
 
 import (
     "fmt"
-    "github.com/bxlxx/libinjection-go"
+    "github.com/corazawaf/libinjection-go"
 )
 
 func main() {
@@ -24,7 +24,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/bxlxx/libinjection-go"
+	"github.com/corazawaf/libinjection-go"
 )
 
 func main() {
