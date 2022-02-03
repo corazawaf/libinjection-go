@@ -79,14 +79,14 @@ func h5TypeToString(h5Type int) string {
 	}
 }
 
-func printHtml5Token(h *h5State) string {
+func printHTML5Token(h *h5State) string {
 	return fmt.Sprintf("%s,%d,%s",
 		h5TypeToString(h.tokenType),
 		h.tokenLen,
 		h.tokenStart[:h.tokenLen])
 }
 
-func runXssTest(filename, flag string) {
+func runXSSTest(filename, flag string) {
 	var (
 		actual = ""
 		data   = readTestData(filename)
@@ -100,13 +100,13 @@ func runXssTest(filename, flag string) {
 		h5.init(data["--INPUT--"], html5FlagsDataState)
 
 		for h5.next() {
-			actual += printHtml5Token(h5) + "\n"
+			actual += printHTML5Token(h5) + "\n"
 		}
 	}
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		xssCount += 1
+		xssCount++
 		fmt.Println("FILE: (" + filename + ")")
 		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
 		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
@@ -123,7 +123,7 @@ func TestXSSDriver(t *testing.T) {
 
 	for _, fi := range dir {
 		if strings.Contains(fi.Name(), "-html5-") {
-			runXssTest(baseDir+fi.Name(), html5)
+			runXSSTest(baseDir+fi.Name(), html5)
 		}
 	}
 

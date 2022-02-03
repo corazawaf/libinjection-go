@@ -41,9 +41,10 @@ func printToken(t *sqliToken) string {
 	out := ""
 	out += string(t.category)
 	out += " "
-	if t.category == 's' {
+	switch t.category {
+	case 's':
 		out += printTokenString(t)
-	} else if t.category == 'v' {
+	case 'v':
 		vc := t.count
 		if vc == 1 {
 			out += "@"
@@ -51,7 +52,7 @@ func printToken(t *sqliToken) string {
 			out += "@@"
 		}
 		out += printTokenString(t)
-	} else {
+	default:
 		out += string(t.val[:t.len])
 	}
 	return strings.TrimSpace(out)
@@ -130,7 +131,7 @@ func runSQLiTest(filename, flag string, sqliFlag int) {
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		sqliCount += 1
+		sqliCount++
 		fmt.Println("FILE: (" + filename + ")")
 		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
 		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
@@ -146,13 +147,14 @@ func TestSQLiDriver(t *testing.T) {
 	}
 
 	for _, fi := range dir {
-		if strings.Contains(fi.Name(), "-sqli-") {
+		switch {
+		case strings.Contains(fi.Name(), "-sqli-"):
 			runSQLiTest(baseDir+fi.Name(), fingerprints, 0)
-		} else if strings.Contains(fi.Name(), "-folding-") {
+		case strings.Contains(fi.Name(), "-folding-"):
 			runSQLiTest(baseDir+fi.Name(), folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
-		} else if strings.Contains(fi.Name(), "-tokens_mysql-") {
+		case strings.Contains(fi.Name(), "-tokens_mysql-"):
 			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
-		} else if strings.Contains(fi.Name(), "-tokens-") {
+		case strings.Contains(fi.Name(), "-tokens-"):
 			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		}
 	}

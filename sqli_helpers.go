@@ -5,11 +5,12 @@ import (
 )
 
 func flag2Delimiter(flag int) byte {
-	if (flag & sqliFlagQuoteSingle) != 0 {
+	switch {
+	case (flag & sqliFlagQuoteSingle) != 0:
 		return byteSingle
-	} else if (flag & sqliFlagQuoteDouble) != 0 {
+	case (flag & sqliFlagQuoteDouble) != 0:
 		return byteDouble
-	} else {
+	default:
 		return byteNull
 	}
 }
@@ -25,7 +26,7 @@ func isBackslashEscaped(str string) bool {
 	var count = 0
 	for i := len(str) - 1; i >= 0; i-- {
 		if str[i] == '\\' {
-			count += 1
+			count++
 		} else {
 			break
 		}
@@ -104,11 +105,7 @@ func isMysqlComment(s string, pos int) bool {
 }
 
 func toUpperCmp(a, b string) bool {
-	if a == strings.ToUpper(b) {
-		return true
-	} else {
-		return false
-	}
+	return a == strings.ToUpper(b)
 }
 
 func isKeyword(key []byte) byte {
@@ -125,11 +122,12 @@ func searchKeyword(key []byte, keywords [sqlKeywordsLen]sqlKeyword) byte {
 		pos := (left + right) >> 1
 
 		upperKey := strings.ToUpper(string(key))
-		if upperKey == keywords[pos].k {
+		switch {
+		case upperKey == keywords[pos].k:
 			return keywords[pos].v
-		} else if upperKey > keywords[pos].k {
+		case upperKey > keywords[pos].k:
 			left = pos + 1
-		} else {
+		default:
 			right = pos
 		}
 	}

@@ -40,12 +40,11 @@ func parseQStringCore(s *sqliState, offset int) int {
 		s.current.strOpen = 'q'
 		s.current.strClose = byteNull
 		return s.length
-	} else {
-		s.current.assign(sqliTokenTypeString, pos+3, index, s.input[pos+3:])
-		s.current.strOpen = 'q'
-		s.current.strClose = 'q'
-		return pos + 3 + index + 2
 	}
+	s.current.assign(sqliTokenTypeString, pos+3, index, s.input[pos+3:])
+	s.current.strOpen = 'q'
+	s.current.strClose = 'q'
+	return pos + 3 + index + 2
 }
 
 func parseByteFunctions(s *sqliState, parse byte) int {

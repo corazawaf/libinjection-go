@@ -5,11 +5,7 @@ import (
 )
 
 func isH5White(ch byte) bool {
-	if ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == ' ' {
-		return true
-	} else {
-		return false
-	}
+	return ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == ' '
 }
 
 func isBlackTag(s string) bool {
@@ -66,15 +62,12 @@ func isBlackAttr(s string) int {
 }
 
 func htmlDecodeByteAt(s string, consumed *int) int {
-	var (
-		length = len(s)
-		val    = 0
-		i      = 0
-	)
+	length := len(s)
+	val := 0
 
 	if length == 0 {
 		*consumed = 0
-		return byteEof
+		return byteEOF
 	}
 
 	*consumed = 1
@@ -96,7 +89,7 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 			return '&'
 		}
 		val = ch
-		i = 4
+		i := 4
 
 		for i < length {
 			ch = int(s[i])
@@ -113,18 +106,17 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 			if val > 0x1000FF {
 				return '&'
 			}
-			i += 1
+			i++
 		}
 		*consumed = i
-		return val
 	} else {
-		i = 2
+		i := 2
 		ch := int(s[i])
 		if ch < '0' || ch > '9' {
 			return '&'
 		}
 		val = ch - '0'
-		i += 1
+		i++
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
@@ -139,11 +131,11 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 			if val > 0x1000FF {
 				return '&'
 			}
-			i += 1
+			i++
 		}
 		*consumed = i
-		return val
 	}
+	return val
 }
 
 // Does an HTML encoded  binary string (const char*, length) start with
@@ -181,14 +173,10 @@ func htmlEncodeStartsWith(a, b string) bool {
 		bs = append(bs, byte(cb))
 	}
 
-	if strings.Index(string(bs), a) != -1 {
-		return true
-	} else {
-		return false
-	}
+	return strings.Contains(string(bs), a)
 }
 
-func isBlackUrl(s string) bool {
+func isBlackURL(s string) bool {
 	urls := []string{
 		"DATA",        // data url
 		"VIEW-SOURCE", // view source url
