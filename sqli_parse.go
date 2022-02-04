@@ -10,10 +10,9 @@ func parseEolComment(s *sqliState) int {
 	if index == -1 {
 		s.current.assign(sqliTokenTypeComment, s.pos, s.length-s.pos, s.input[s.pos:])
 		return s.length
-	} else {
-		s.current.assign(sqliTokenTypeComment, s.pos, index, s.input[s.pos:])
-		return s.pos + index + 1
 	}
+	s.current.assign(sqliTokenTypeComment, s.pos, index, s.input[s.pos:])
+	return s.pos + index + 1
 }
 
 func parseMoney(s *sqliState) int {
@@ -25,7 +24,8 @@ func parseMoney(s *sqliState) int {
 	// $1,000.00 or $1.000,00 ok!
 	// This also parses $.....,,111 but that's ok
 	length := strLenSpn(s.input[s.pos+1:], s.length-s.pos-1, "0123456789.,")
-	if length == 0 {
+	switch {
+	case length == 0:
 		if s.input[s.pos+1] == '$' {
 			// we have $$ .. find ending $$ and make string
 			index := strings.Index(s.input[s.pos+2:], "$$")
@@ -34,46 +34,43 @@ func parseMoney(s *sqliState) int {
 				s.current.strOpen = '$'
 				s.current.strClose = byteNull
 				return s.length
-			} else {
-				s.current.assign(sqliTokenTypeString, s.pos+2, index, s.input[s.pos+2:])
-				s.current.strOpen = '$'
-				s.current.strClose = '$'
-				return s.pos + 2 + index + 2
 			}
-		} else {
-			// ok it's not a number or '$$', but maybe it's pgsql "$ quoted strings"
-			xlen := strLenSpn(s.input[s.pos+1:], s.length-s.pos-1, "abcdefghjiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-			if xlen == 0 {
-				// hmm, it's "$" _something_ .. just add $ and keep going
-				s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
-				return s.pos + 1
-			}
-
-			// we have $foobar?????
-			if s.pos+xlen+1 == s.length || s.input[s.pos+xlen+1] != '$' {
-				// not $foobar$, or fell off edge
-				s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
-				return s.pos + 1
-			}
-
-			// we have $foobar$ ... find it again
-			index := strings.Index(s.input[s.pos+xlen+2:], s.input[s.pos:s.pos+xlen+2])
-			if index == -1 {
-				s.current.assign(sqliTokenTypeString, s.pos+xlen+2, s.length-s.pos-xlen-2, s.input[s.pos+xlen+2:])
-				s.current.strOpen = '$'
-				s.current.strClose = byteNull
-				return s.length
-			} else {
-				// get one
-				s.current.assign(sqliTokenTypeString, s.pos+xlen+2, index, s.input[s.pos+xlen+2:])
-				s.current.strOpen = '$'
-				s.current.strClose = '$'
-				return s.pos + xlen + 2 + index + xlen + 2
-			}
+			s.current.assign(sqliTokenTypeString, s.pos+2, index, s.input[s.pos+2:])
+			s.current.strOpen = '$'
+			s.current.strClose = '$'
+			return s.pos + 2 + index + 2
 		}
-	} else if length == 1 && s.input[s.pos+1] == '.' {
+		// ok it's not a number or '$$', but maybe it's pgsql "$ quoted strings"
+		xlen := strLenSpn(s.input[s.pos+1:], s.length-s.pos-1, "abcdefghjiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+		if xlen == 0 {
+			// hmm, it's "$" _something_ .. just add $ and keep going
+			s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
+			return s.pos + 1
+		}
+
+		// we have $foobar?????
+		if s.pos+xlen+1 == s.length || s.input[s.pos+xlen+1] != '$' {
+			// not $foobar$, or fell off edge
+			s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
+			return s.pos + 1
+		}
+
+		// we have $foobar$ ... find it again
+		index := strings.Index(s.input[s.pos+xlen+2:], s.input[s.pos:s.pos+xlen+2])
+		if index == -1 {
+			s.current.assign(sqliTokenTypeString, s.pos+xlen+2, s.length-s.pos-xlen-2, s.input[s.pos+xlen+2:])
+			s.current.strOpen = '$'
+			s.current.strClose = byteNull
+			return s.length
+		}
+		// get one
+		s.current.assign(sqliTokenTypeString, s.pos+xlen+2, index, s.input[s.pos+xlen+2:])
+		s.current.strOpen = '$'
+		s.current.strClose = '$'
+		return s.pos + xlen + 2 + index + xlen + 2
+	case length == 1 && s.input[s.pos+1] == '.':
 		return parseWord(s)
-	} else {
+	default:
 		s.current.assign(sqliTokenTypeNumber, s.pos, length+1, s.input[s.pos:])
 		return s.pos + length + 1
 	}
@@ -101,14 +98,13 @@ func parseByte(s *sqliState) int {
 // In ANSI mode, hash is an operator
 // In MYSQL mode, it's a EOL comment like '--'
 func parseHash(s *sqliState) int {
-	s.statsCommentHash += 1
+	s.statsCommentHash++
 	if (s.flags & sqliFlagSQLMysql) != 0 {
-		s.statsCommentHash += 1
+		s.statsCommentHash++
 		return parseEolComment(s)
-	} else {
-		s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, '#')
-		return s.pos + 1
 	}
+	s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, '#')
+	return s.pos + 1
 }
 
 func parseDash(s *sqliState) int {
@@ -118,15 +114,16 @@ func parseDash(s *sqliState) int {
 	// 3) --[not white] in MYSQL this is NOT a comment but two unary operators
 	// 4) --[not white] everyone else thinks this is a comment
 	// 5) -[not dash] '-' is a unary operator
-	if s.pos+2 < s.length && s.input[s.pos+1] == '-' && isByteWhite(s.input[s.pos+2]) {
+	switch {
+	case s.pos+2 < s.length && s.input[s.pos+1] == '-' && isByteWhite(s.input[s.pos+2]):
 		return parseEolComment(s)
-	} else if s.pos+2 == s.length && s.input[s.pos+1] == '-' {
+	case s.pos+2 == s.length && s.input[s.pos+1] == '-':
 		return parseEolComment(s)
-	} else if s.pos+1 < s.length && s.input[s.pos+1] == '-' && (s.flags&sqliFlagSQLAnsi) != 0 {
+	case s.pos+1 < s.length && s.input[s.pos+1] == '-' && (s.flags&sqliFlagSQLAnsi) != 0:
 		// --[not white] not white case
-		s.statsCommentDDX += 1
+		s.statsCommentDDX++
 		return parseEolComment(s)
-	} else {
+	default:
 		s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, '-')
 		return s.pos + 1
 	}
@@ -157,7 +154,7 @@ func parseSlash(s *sqliState) int {
 	// Also, Mysql's "conditional" comments for version
 	// are an automatic black ban!
 	if index != -1 &&
-		strings.Index(s.input[s.pos+2:s.pos+2+index+1], "/*") != -1 {
+		strings.Contains(s.input[s.pos+2:s.pos+2+index+1], "/*") {
 		ctype = sqliTokenTypeEvil
 	} else if isMysqlComment(s.input, s.pos) {
 		ctype = sqliTokenTypeEvil
@@ -172,10 +169,9 @@ func parseBackSlash(s *sqliState) int {
 	if s.pos+1 < s.length && s.input[s.pos+1] == 'N' {
 		s.current.assign(sqliTokenTypeNumber, s.pos, 2, s.input[s.pos:])
 		return s.pos + 2
-	} else {
-		s.current.assignByte(sqliTokenTypeBackslash, s.pos, 1, s.input[s.pos])
-		return s.pos + 1
 	}
+	s.current.assignByte(sqliTokenTypeBackslash, s.pos, 1, s.input[s.pos])
+	return s.pos + 1
 }
 
 func parseOperator2(s *sqliState) int {
@@ -200,10 +196,9 @@ func parseOperator2(s *sqliState) int {
 		// ':' is not an operator
 		s.current.assign(sqliTokenTypeColon, s.pos, 1, s.input[s.pos:])
 		return s.pos + 1
-	} else {
-		// must be a single char operator
-		return parseOperator1(s)
 	}
+	// must be a single char operator
+	return parseOperator1(s)
 }
 
 // Used when first char is a ' or "
@@ -251,7 +246,7 @@ func parseVar(s *sqliState) int {
 	//
 	// move past optional other '@'
 	if pos < s.length && s.input[pos] == '@' {
-		pos += 1
+		pos++
 		s.current.count = 2
 	} else {
 		s.current.count = 1
@@ -276,10 +271,9 @@ func parseVar(s *sqliState) int {
 	if length == 0 {
 		s.current.assign(sqliTokenTypeVariable, pos, 0, s.input[pos:])
 		return pos
-	} else {
-		s.current.assign(sqliTokenTypeVariable, pos, length, s.input[pos:])
-		return pos + length
 	}
+	s.current.assign(sqliTokenTypeVariable, pos, length, s.input[pos:])
+	return pos + length
 }
 
 func parseNumber(s *sqliState) int {
@@ -303,23 +297,22 @@ func parseNumber(s *sqliState) int {
 			if length == 0 {
 				s.current.assign(sqliTokenTypeBareWord, s.pos, 2, s.input[s.pos:])
 				return s.pos + 2
-			} else {
-				s.current.assign(sqliTokenTypeNumber, s.pos, 2+length, s.input[s.pos:])
-				return s.pos + 2 + length
 			}
+			s.current.assign(sqliTokenTypeNumber, s.pos, 2+length, s.input[s.pos:])
+			return s.pos + 2 + length
 		}
 	}
 
 	pos := s.pos
 	start := s.pos
 	for pos < s.length && s.input[pos]-'0' <= 9 {
-		pos += 1
+		pos++
 	}
 
 	if pos < s.length && s.input[pos] == '.' {
-		pos += 1
+		pos++
 		for pos < s.length && s.input[pos]-'0' <= 9 {
-			pos += 1
+			pos++
 		}
 
 		if pos-start == 1 {
@@ -332,15 +325,15 @@ func parseNumber(s *sqliState) int {
 	if pos < s.length {
 		if s.input[pos] == 'E' || s.input[pos] == 'e' {
 			haveE = 1
-			pos += 1
+			pos++
 
 			if pos < s.length && (s.input[pos] == '+' || s.input[pos] == '-') {
-				pos += 1
+				pos++
 			}
 
 			for pos < s.length && s.input[pos]-'0' <= 9 {
 				haveExp = 1
-				pos += 1
+				pos++
 			}
 		}
 	}
@@ -348,16 +341,17 @@ func parseNumber(s *sqliState) int {
 	// oracle's ending float or double suffix
 	// http://docs.oracle.com/cd/B19306_01/server.102/b14200/sql_elements003.htm#i139891
 	if pos < s.length && (s.input[pos] == 'd' || s.input[pos] == 'D' || s.input[pos] == 'f' || s.input[pos] == 'F') {
-		if pos+1 == s.length {
+		switch {
+		case pos+1 == s.length:
 			// line ends evaluate "... 1.2f$" as '1.2f'
-			pos += 1
-		} else if isByteWhite(s.input[pos+1]) || s.input[pos+1] == ';' {
+			pos++
+		case isByteWhite(s.input[pos+1]) || s.input[pos+1] == ';':
 			// easy case, evaluate "... 1.2f ..." as '1.2f'
-			pos += 1
-		} else if s.input[pos+1] == 'u' || s.input[pos+1] == 'U' {
+			pos++
+		case s.input[pos+1] == 'u' || s.input[pos+1] == 'U':
 			// a bit of a hack but makes '1fUNION' parse as '1f UNION'
-			pos += 1
-		} else {
+			pos++
+		default:
 			// it's like "123FROM"
 			// parse as "123" only
 		}
@@ -408,9 +402,8 @@ func parseUString(s *sqliState) int {
 		}
 
 		return pos
-	} else {
-		return parseWord(s)
 	}
+	return parseWord(s)
 }
 
 // Oracle's q string
@@ -483,8 +476,7 @@ func parseBWord(s *sqliState) int {
 	if end == -1 {
 		s.current.assign(sqliTokenTypeBareWord, s.pos, s.length-s.pos, s.input[s.pos:])
 		return s.length
-	} else {
-		s.current.assign(sqliTokenTypeBareWord, s.pos, end+1, s.input[s.pos:])
-		return s.pos + end + 1
 	}
+	s.current.assign(sqliTokenTypeBareWord, s.pos, end+1, s.input[s.pos:])
+	return s.pos + end + 1
 }

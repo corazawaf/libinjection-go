@@ -1,7 +1,7 @@
 package libinjection
 
 const (
-	byteEof      = -1
+	byteEOF      = -1
 	byteBang     = 33
 	bytePercent  = 37
 	byteDash     = 45

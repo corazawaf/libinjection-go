@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-const version = "3.9.2"
-
 type lookup func(lookupType int, word []byte) byte
 
 type sqliState struct {
@@ -44,7 +42,7 @@ type sqliState struct {
 	// These comments are in the form of
 	// '--[whitespace]' or '--[EOF]'
 	// All databases treat this as a comment.
-	statsCommentDDW int
+	// statsCommentDDW int
 
 	// Number of ddx(dash-dash-[not white]) comments
 	//
@@ -57,7 +55,7 @@ type sqliState struct {
 	statsCommentDDX int
 
 	// c-style comments found /x .. x/
-	statsCommentC int
+	// statsCommentC int
 
 	// '#' operators or MYSQL EOL comments found
 	statsCommentHash int
@@ -120,7 +118,7 @@ func (s *sqliState) sqliFingerprint(flags int) []byte {
 	// accurately due to pgsql's double comments
 	// or other syntax that isn't consistent.
 	// Should be very rare false positive
-	if bytes.ContainsAny(s.fingerprint[:], string(sqliTokenTypeEvil)) {
+	if bytes.ContainsAny(s.fingerprint, string(sqliTokenTypeEvil)) {
 		s.fingerprint = s.fingerprint[:0]
 		s.fingerprint = append(s.fingerprint, sqliTokenTypeEvil)
 
@@ -180,9 +178,8 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 	if ch != byteNull {
 		tokenA.assign(ch, tokenA.pos, length, string(tmp[:length]))
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // parses and folds input, up to 5 tokens
@@ -208,10 +205,9 @@ func (s *sqliState) fold() int {
 	if !more {
 		// if input was only comments, unary or (, then exit
 		return 0
-	} else {
-		// it's some other token
-		pos += 1
 	}
+	// it's some other token
+	pos++
 
 	for {
 		// do we have all the max number of tokens? if so do
@@ -262,7 +258,7 @@ func (s *sqliState) fold() int {
 					lastComment = *s.current
 				} else {
 					lastComment.category = byteNull
-					pos += 1
+					pos++
 				}
 			}
 		}
@@ -276,43 +272,44 @@ func (s *sqliState) fold() int {
 		// FOLD: "ss" -> "s"
 		// "foo" "bar" is valid SQL
 		// just ignore second string
-		if s.tokenVec[left].category == sqliTokenTypeString && s.tokenVec[left+1].category == sqliTokenTypeString {
-			pos -= 1
-			s.statsFolds += 1
+		switch {
+		case s.tokenVec[left].category == sqliTokenTypeString && s.tokenVec[left+1].category == sqliTokenTypeString:
+			pos--
+			s.statsFolds++
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeSemiColon && s.tokenVec[left+1].category == sqliTokenTypeSemiColon {
+		case s.tokenVec[left].category == sqliTokenTypeSemiColon && s.tokenVec[left+1].category == sqliTokenTypeSemiColon:
 			// not sure how various engines handle
 			// 'select 1;;drop table foo' or
 			// 'select 1;/x foo x/;drop table foo'
 			// to prevent surprises, just fold away repeated semicolons
-			pos -= 1
-			s.statsFolds += 1
+			pos--
+			s.statsFolds++
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeOperator || s.tokenVec[left].category == sqliTokenTypeLogicOperator) &&
-			(s.tokenVec[left+1].isUnaryOp() || s.tokenVec[left+1].category == sqliTokenTypeSQLType) {
-			pos -= 1
-			s.statsFolds += 1
+		case (s.tokenVec[left].category == sqliTokenTypeOperator || s.tokenVec[left].category == sqliTokenTypeLogicOperator) &&
+			(s.tokenVec[left+1].isUnaryOp() || s.tokenVec[left+1].category == sqliTokenTypeSQLType):
+			pos--
+			s.statsFolds++
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeLeftParenthesis &&
-			s.tokenVec[left+1].isUnaryOp() {
-			pos -= 1
-			s.statsFolds += 1
+		case s.tokenVec[left].category == sqliTokenTypeLeftParenthesis &&
+			s.tokenVec[left+1].isUnaryOp():
+			pos--
+			s.statsFolds++
 			if left > 0 {
-				left -= 1
+				left--
 			}
 			continue
-		} else if s.merge(&s.tokenVec[left], &s.tokenVec[left+1]) {
-			pos -= 1
-			s.statsFolds += 1
+		case s.merge(&s.tokenVec[left], &s.tokenVec[left+1]):
+			pos--
+			s.statsFolds++
 			if left > 0 {
-				left -= 1
+				left--
 			}
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeSemiColon &&
+		case s.tokenVec[left].category == sqliTokenTypeSemiColon &&
 			s.tokenVec[left+1].category == sqliTokenTypeFunction &&
 			(s.tokenVec[left+1].val[0] == 'I' || s.tokenVec[left+1].val[0] == 'i') &&
-			(s.tokenVec[left+1].val[1] == 'F' || s.tokenVec[left+1].val[1] == 'f') {
+			(s.tokenVec[left+1].val[1] == 'F' || s.tokenVec[left+1].val[1] == 'f'):
 			// IF is normally a function, except in Transact-SQL where it can be used as a standalone
 			// control flow operator, e.g. IF 1=1...
 			// if found after a semicolon, covert from 'f' type to 'F' type
@@ -320,7 +317,7 @@ func (s *sqliState) fold() int {
 			// left += 2
 			// reparse everything, but we probably can advance left, and pos
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord || s.tokenVec[left].category == sqliTokenTypeVariable) &&
+		case (s.tokenVec[left].category == sqliTokenTypeBareWord || s.tokenVec[left].category == sqliTokenTypeVariable) &&
 			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis &&
 			( // TSQL functions but common enough to be column names
 			toUpperCmp("USER_ID", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
@@ -340,15 +337,15 @@ func (s *sqliState) fold() int {
 				toUpperCmp("CURRENT_TIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 				toUpperCmp("CURRENT_TIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
 				toUpperCmp("LOCALTIME", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
+				toUpperCmp("LOCALTIMESTAMP", string(s.tokenVec[left].val[:s.tokenVec[left].len]))):
 			// pos is the same
 			// other conversions need to go here... for instance
 			// password CAN be a function, coalesce CAN be a funtion
 			s.tokenVec[left].category = sqliTokenTypeFunction
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeKeyword &&
+		case s.tokenVec[left].category == sqliTokenTypeKeyword &&
 			(toUpperCmp("IN", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("NOT IN", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
+				toUpperCmp("NOT IN", string(s.tokenVec[left].val[:s.tokenVec[left].len]))):
 			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
 				// got ... IN ( ... (or 'NOT IN')
 				// it's an operator
@@ -368,61 +365,61 @@ func (s *sqliState) fold() int {
 			// two use cases   "foo" LIKE "BAR" (normal operator)
 			// "foo" = LIKE(1,2)
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeOperator &&
+		case s.tokenVec[left].category == sqliTokenTypeOperator &&
 			(toUpperCmp("LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len])) ||
-				toUpperCmp("NOT LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len]))) {
+				toUpperCmp("NOT LIKE", string(s.tokenVec[left].val[:s.tokenVec[left].len]))):
 			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
 				// SELECT LIKE(...
 				// it's a function
 				s.tokenVec[left].category = sqliTokenTypeFunction
 			}
-		} else if s.tokenVec[left].category == sqliTokenTypeSQLType &&
+		case s.tokenVec[left].category == sqliTokenTypeSQLType &&
 			(s.tokenVec[left+1].category == sqliTokenTypeBareWord ||
 				s.tokenVec[left+1].category == sqliTokenTypeNumber ||
 				s.tokenVec[left+1].category == sqliTokenTypeSQLType ||
 				s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis ||
 				s.tokenVec[left+1].category == sqliTokenTypeFunction ||
 				s.tokenVec[left+1].category == sqliTokenTypeVariable ||
-				s.tokenVec[left+1].category == sqliTokenTypeString) {
+				s.tokenVec[left+1].category == sqliTokenTypeString):
 			s.tokenVec[left] = s.tokenVec[left+1]
-			pos -= 1
-			s.statsFolds += 1
+			pos--
+			s.statsFolds++
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeCollate && s.tokenVec[left+1].category == sqliTokenTypeBareWord {
+		case s.tokenVec[left].category == sqliTokenTypeCollate && s.tokenVec[left+1].category == sqliTokenTypeBareWord:
 			// there are too many collation types.. so if the bareword has a "_"
 			// then it's TYPE_SQLTYPE
 			if bytes.ContainsRune(s.tokenVec[left+1].val[:], '_') {
 				s.tokenVec[left+1].category = sqliTokenTypeSQLType
 				left = 0
 			}
-		} else if s.tokenVec[left].category == sqliTokenTypeBackslash {
+		case s.tokenVec[left].category == sqliTokenTypeBackslash:
 			if s.tokenVec[left+1].isArithmeticOp() {
 				// very weird case in TSQL where '\%1' is parsed as '0 % 1', etc.
 				s.tokenVec[left].category = sqliTokenTypeNumber
 			} else {
 				// just ignore it. Again TSQL seems to parse \1 as "1"
 				s.tokenVec[left] = s.tokenVec[left+1]
-				pos -= 1
-				s.statsFolds += 1
+				pos--
+				s.statsFolds++
 			}
 
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeLeftParenthesis &&
-			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
-			pos -= 1
+		case s.tokenVec[left].category == sqliTokenTypeLeftParenthesis &&
+			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis:
+			pos--
 			left = 0
-			s.statsFolds += 1
+			s.statsFolds++
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeRightParenthesis &&
-			s.tokenVec[left+1].category == sqliTokenTypeRightParenthesis {
-			pos -= 1
+		case s.tokenVec[left].category == sqliTokenTypeRightParenthesis &&
+			s.tokenVec[left+1].category == sqliTokenTypeRightParenthesis:
+			pos--
 			left = 0
-			s.statsFolds += 1
+			s.statsFolds++
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeLeftBrace &&
-			s.tokenVec[left+1].category == sqliTokenTypeBareWord {
+		case s.tokenVec[left].category == sqliTokenTypeLeftBrace &&
+			s.tokenVec[left+1].category == sqliTokenTypeBareWord:
 			// MySQL degenerate case
 			//
 			// select { ``.``.id }; -- valid!!
@@ -452,10 +449,10 @@ func (s *sqliState) fold() int {
 			pos -= 2
 			s.statsFolds += 2
 			continue
-		} else if s.tokenVec[left+1].category == sqliTokenTypeRightBrace {
-			pos -= 1
+		case s.tokenVec[left+1].category == sqliTokenTypeRightBrace:
+			pos--
 			left = 0
-			s.statsFolds += 1
+			s.statsFolds++
 			continue
 		}
 
@@ -469,7 +466,7 @@ func (s *sqliState) fold() int {
 					lastComment = *s.current
 				} else {
 					lastComment.category = byteNull
-					pos += 1
+					pos++
 				}
 			}
 		}
@@ -481,51 +478,53 @@ func (s *sqliState) fold() int {
 		}
 
 		// now look for three token folding
-		if s.tokenVec[left].category == sqliTokenTypeNumber &&
+		switch {
+
+		case s.tokenVec[left].category == sqliTokenTypeNumber &&
 			s.tokenVec[left+1].category == sqliTokenTypeOperator &&
-			s.tokenVec[left+2].category == sqliTokenTypeNumber {
+			s.tokenVec[left+2].category == sqliTokenTypeNumber:
 			pos -= 2
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeOperator &&
+		case s.tokenVec[left].category == sqliTokenTypeOperator &&
 			s.tokenVec[left+1].category != sqliTokenTypeLeftParenthesis &&
-			s.tokenVec[left+2].category == sqliTokenTypeOperator {
+			s.tokenVec[left+2].category == sqliTokenTypeOperator:
 			pos -= 2
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeLogicOperator &&
-			s.tokenVec[left+2].category == sqliTokenTypeLogicOperator {
+		case s.tokenVec[left].category == sqliTokenTypeLogicOperator &&
+			s.tokenVec[left+2].category == sqliTokenTypeLogicOperator:
 			pos -= 2
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeVariable &&
+		case s.tokenVec[left].category == sqliTokenTypeVariable &&
 			s.tokenVec[left+1].category == sqliTokenTypeOperator &&
 			(s.tokenVec[left+2].category == sqliTokenTypeVariable ||
 				s.tokenVec[left+2].category == sqliTokenTypeNumber ||
-				s.tokenVec[left+2].category == sqliTokenTypeBareWord) {
+				s.tokenVec[left+2].category == sqliTokenTypeBareWord):
 			pos -= 2
 			left = 0
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord ||
+		case (s.tokenVec[left].category == sqliTokenTypeBareWord ||
 			s.tokenVec[left].category == sqliTokenTypeNumber) &&
 			s.tokenVec[left+1].category == sqliTokenTypeOperator &&
 			(s.tokenVec[left+2].category == sqliTokenTypeNumber ||
-				s.tokenVec[left+2].category == sqliTokenTypeBareWord) {
+				s.tokenVec[left+2].category == sqliTokenTypeBareWord):
 			pos -= 2
 			left = 0
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord ||
+		case (s.tokenVec[left].category == sqliTokenTypeBareWord ||
 			s.tokenVec[left].category == sqliTokenTypeNumber ||
 			s.tokenVec[left].category == sqliTokenTypeVariable ||
 			s.tokenVec[left].category == sqliTokenTypeString) &&
 			s.tokenVec[left+1].category == sqliTokenTypeOperator &&
 			string(s.tokenVec[left+1].val[:s.tokenVec[left+1].len]) == "::" &&
-			s.tokenVec[left+2].category == sqliTokenTypeSQLType {
+			s.tokenVec[left+2].category == sqliTokenTypeSQLType:
 			pos -= 2
 			left = 0
 			s.statsFolds += 2
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeBareWord ||
+		case (s.tokenVec[left].category == sqliTokenTypeBareWord ||
 			s.tokenVec[left].category == sqliTokenTypeNumber ||
 			s.tokenVec[left].category == sqliTokenTypeString ||
 			s.tokenVec[left].category == sqliTokenTypeVariable) &&
@@ -533,22 +532,22 @@ func (s *sqliState) fold() int {
 			(s.tokenVec[left+2].category == sqliTokenTypeNumber ||
 				s.tokenVec[left+2].category == sqliTokenTypeBareWord ||
 				s.tokenVec[left+2].category == sqliTokenTypeString ||
-				s.tokenVec[left+2].category == sqliTokenTypeVariable) {
+				s.tokenVec[left+2].category == sqliTokenTypeVariable):
 			pos -= 2
 			left = 0
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeExpression ||
+		case (s.tokenVec[left].category == sqliTokenTypeExpression ||
 			s.tokenVec[left].category == sqliTokenTypeGroup ||
 			s.tokenVec[left].category == sqliTokenTypeComma) &&
 			s.tokenVec[left+1].isUnaryOp() &&
-			s.tokenVec[left+2].category == sqliTokenTypeLeftParenthesis {
+			s.tokenVec[left+2].category == sqliTokenTypeLeftParenthesis:
 			// got something like SELECT + (, LIMIT + (
 			// remove unary operator
 			s.tokenVec[left+1] = s.tokenVec[left+2]
-			pos -= 1
+			pos--
 			left = 0
 			continue
-		} else if (s.tokenVec[left].category == sqliTokenTypeKeyword ||
+		case (s.tokenVec[left].category == sqliTokenTypeKeyword ||
 			s.tokenVec[left].category == sqliTokenTypeExpression ||
 			s.tokenVec[left].category == sqliTokenTypeGroup) &&
 			s.tokenVec[left+1].isUnaryOp() &&
@@ -556,19 +555,19 @@ func (s *sqliState) fold() int {
 				s.tokenVec[left+2].category == sqliTokenTypeBareWord ||
 				s.tokenVec[left+2].category == sqliTokenTypeVariable ||
 				s.tokenVec[left+2].category == sqliTokenTypeString ||
-				s.tokenVec[left+2].category == sqliTokenTypeFunction) {
+				s.tokenVec[left+2].category == sqliTokenTypeFunction):
 			// remove unary operators
 			// select -1
 			s.tokenVec[left+1] = s.tokenVec[left+2]
-			pos -= 1
+			pos--
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeComma &&
+		case s.tokenVec[left].category == sqliTokenTypeComma &&
 			s.tokenVec[left+1].isUnaryOp() &&
 			(s.tokenVec[left+2].category == sqliTokenTypeNumber ||
 				s.tokenVec[left+2].category == sqliTokenTypeBareWord ||
 				s.tokenVec[left+2].category == sqliTokenTypeVariable ||
-				s.tokenVec[left+2].category == sqliTokenTypeString) {
+				s.tokenVec[left+2].category == sqliTokenTypeString):
 			// interesting case turn ", -1" --> ",1" PLUS we need to back up
 			// one token if possible to see if more folding can be done
 			// "1, -1" --> "1"
@@ -576,37 +575,37 @@ func (s *sqliState) fold() int {
 			left = 0
 			pos -= 3
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeComma &&
+		case s.tokenVec[left].category == sqliTokenTypeComma &&
 			s.tokenVec[left+1].isUnaryOp() &&
-			s.tokenVec[left+2].category == sqliTokenTypeFunction {
+			s.tokenVec[left+2].category == sqliTokenTypeFunction:
 			// Separate case from above since you end up with
 			// 1,-sin(1) --> 1 (1)
 			// Here, just do
 			// 1,-sin(1) --> 1,sin(1)
 			// just remove unary operator
 			s.tokenVec[left+1] = s.tokenVec[left+2]
-			pos -= 1
+			pos--
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeBareWord &&
+		case s.tokenVec[left].category == sqliTokenTypeBareWord &&
 			s.tokenVec[left+1].category == sqliTokenTypeDot &&
-			s.tokenVec[left+2].category == sqliTokenTypeBareWord {
+			s.tokenVec[left+2].category == sqliTokenTypeBareWord:
 			// ignore the '.n'
 			// typically is this database name .table
 			pos -= 2
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeExpression &&
+		case s.tokenVec[left].category == sqliTokenTypeExpression &&
 			s.tokenVec[left+1].category == sqliTokenTypeDot &&
-			s.tokenVec[left+2].category == sqliTokenTypeBareWord {
+			s.tokenVec[left+2].category == sqliTokenTypeBareWord:
 			// select . `foo` --> select `foo`
 			s.tokenVec[left+1] = s.tokenVec[left+2]
-			pos -= 1
+			pos--
 			left = 0
 			continue
-		} else if s.tokenVec[left].category == sqliTokenTypeFunction &&
+		case s.tokenVec[left].category == sqliTokenTypeFunction &&
 			s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis &&
-			s.tokenVec[left+2].category != sqliTokenTypeRightParenthesis {
+			s.tokenVec[left+2].category != sqliTokenTypeRightParenthesis:
 			// what's going on here
 			// Some SQL functions like USER() have 0 args
 			// if we get User(foo), then User is not a function
@@ -620,14 +619,14 @@ func (s *sqliState) fold() int {
 		// no folding -- assume left-most token is
 		// good, now use the existing 2 tokens --
 		// do not get another
-		left += 1
+		left++
 	}
 
 	// if we have 4 or fewer tokens, and we had a comment token
 	// at the end, add it back
 	if left < maxTokens && lastComment.category == sqliTokenTypeComment {
 		s.tokenVec[left] = lastComment
-		left += 1
+		left++
 	}
 
 	// sometimes we grab a 6th token to help
@@ -649,7 +648,7 @@ func (s *sqliState) tokenize() bool {
 	// then pretend the input starts with a quote
 	if s.pos == 0 && (s.flags&(sqliFlagQuoteSingle|sqliFlagQuoteDouble)) != 0 {
 		s.pos = s.current.parseStringCore(s.input, s.length, 0, 0, flag2Delimiter(s.flags))
-		s.statsTokens += 1
+		s.statsTokens++
 		return true
 	}
 
@@ -661,7 +660,7 @@ func (s *sqliState) tokenize() bool {
 		s.pos = parseByteFunctions(s, ch)
 
 		if s.current.category != byteNull {
-			s.statsTokens += 1
+			s.statsTokens++
 			return true
 		}
 	}
@@ -673,10 +672,7 @@ func (s *sqliState) tokenize() bool {
 //
 // return TRUE if SQLi, false otherwise
 func (s *sqliState) blacklist() bool {
-	var (
-		fp []byte
-		i  = 0
-	)
+	var fp []byte
 
 	length := len(s.fingerprint)
 	if length < 1 {
@@ -684,7 +680,7 @@ func (s *sqliState) blacklist() bool {
 	}
 
 	fp = append(fp, '0')
-	for i = 0; i < length; i++ {
+	for i := 0; i < length; i++ {
 		ch := s.fingerprint[i]
 		if ch >= 'a' && ch <= 'z' {
 			ch -= 0x20
@@ -692,10 +688,7 @@ func (s *sqliState) blacklist() bool {
 		fp = append(fp, ch)
 	}
 
-	if isKeyword(fp[:]) != sqliTokenTypeFingerprint {
-		return false
-	}
-	return true
+	return isKeyword(fp) == sqliTokenTypeFingerprint
 }
 
 // Given a positive match for a pattern (i.e. pattern is SQLi), this function
@@ -723,18 +716,14 @@ func (s *sqliState) notWhitelist() bool {
 		// case 2 are "very small SQLi" which make them
 		// hard to tell from normal input...
 		if s.fingerprint[1] == sqliTokenTypeUnion {
-			if s.statsTokens == 2 {
-				//  not sure why but 1U comes up in SQLi attack
-				//  likely part of parameter splitting/etc.
-				//  lots of reasons why "1 union" might be normal
-				//  input, so beep only if other SQLi things are present
-				//
-				//  it really is a number and 'union'
-				//  otherwise it has folding or comments
-				return false
-			} else {
-				return true
-			}
+			//  not sure why but 1U comes up in SQLi attack
+			//  likely part of parameter splitting/etc.
+			//  lots of reasons why "1 union" might be normal
+			//  input, so beep only if other SQLi things are present
+			//
+			//  it really is a number and 'union'
+			//  otherwise it has folding or comments
+			return s.statsTokens != 2
 		}
 
 		// if 'comment' is '#' ignore.. too many FP
@@ -804,7 +793,8 @@ func (s *sqliState) notWhitelist() bool {
 		// no opening quote, no closing quote
 		// and each string has data
 		// sos || s&s are string and operator || logic operator and string
-		if string(s.fingerprint[:]) == "sos" || string(s.fingerprint[:]) == "s&s" {
+		switch {
+		case string(s.fingerprint) == "sos" || string(s.fingerprint) == "s&s":
 			if s.tokenVec[0].strOpen == byteNull &&
 				s.tokenVec[2].strClose == byteNull &&
 				s.tokenVec[0].strClose == s.tokenVec[2].strOpen {
@@ -817,17 +807,17 @@ func (s *sqliState) notWhitelist() bool {
 			}
 
 			return false
-		} else if string(s.fingerprint[:]) == "s&n" ||
-			string(s.fingerprint[:]) == "n&1" ||
-			string(s.fingerprint[:]) == "1&1" ||
-			string(s.fingerprint[:]) == "1&v" ||
-			string(s.fingerprint[:]) == "1&s" {
+		case string(s.fingerprint) == "s&n" ||
+			string(s.fingerprint) == "n&1" ||
+			string(s.fingerprint) == "1&1" ||
+			string(s.fingerprint) == "1&v" ||
+			string(s.fingerprint) == "1&s":
 			// 'sexy and 17' not SQLi
 			// 'sexy and 17<18' SQLi
 			if s.statsTokens == 3 {
 				return false
 			}
-		} else if s.tokenVec[1].category == sqliTokenTypeKeyword {
+		case s.tokenVec[1].category == sqliTokenTypeKeyword:
 			if s.tokenVec[1].len < 5 || !toUpperCmp("INTO", string(s.tokenVec[1].val[:4])) {
 				// if it's not "INTO OUTFILE", or "INTO DUMPFILE" (MySQL)
 				// then treat as safe
@@ -847,12 +837,10 @@ func (s *sqliState) lookupWord(lookupType int, word []byte) byte {
 	if lookupType == sqliLookupFingerprint {
 		if s.checkFingerprint() {
 			return 'X'
-		} else {
-			return byteNull
 		}
-	} else {
-		return searchKeyword(word[:], sqlKeywords)
+		return byteNull
 	}
+	return searchKeyword(word, sqlKeywords)
 }
 
 func (s *sqliState) reset(flags int) {
@@ -878,11 +866,11 @@ func (s *sqliState) check() bool {
 
 	// test input "as-is"
 	s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLAnsi)
-	if s.lookup(sqliLookupFingerprint, s.fingerprint[:]) != byteNull {
+	if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
 		return true
 	} else if s.reparseAsMySQL() {
 		s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLMysql)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint[:]) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}
@@ -890,22 +878,22 @@ func (s *sqliState) check() bool {
 	// if input has a single quote, then
 	// test as if input was actually '
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
-	if strings.ContainsRune(s.input, byteSingle) {
+	if strings.ContainsRune(s.input, rune(byteSingle)) {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint[:]) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		} else if s.reparseAsMySQL() {
 			s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLMysql)
-			if s.lookup(sqliLookupFingerprint, s.fingerprint[:]) != byteNull {
+			if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
 				return true
 			}
 		}
 	}
 
 	// same as above but with a double quote
-	if strings.ContainsRune(s.input, byteDouble) {
+	if strings.ContainsRune(s.input, rune(byteDouble)) {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint[:]) != byteNull {
+		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}
@@ -914,13 +902,14 @@ func (s *sqliState) check() bool {
 	return false
 }
 
+// IsSQLi returns true if the input is SQLi
+// It also returns the fingerprint of the SQL Injection as []byte
 func IsSQLi(input string) (bool, []byte) {
 	state := new(sqliState)
 	sqliInit(state, input, 0)
 	result := state.check()
 	if result {
 		return result, state.fingerprint
-	} else {
-		return result, []byte{}
 	}
+	return result, []byte{}
 }

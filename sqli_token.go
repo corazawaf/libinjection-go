@@ -47,21 +47,22 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 			str = str[index:]
 		}
 
-		if index == -1 {
+		switch {
+		case index == -1:
 			// string ended with no trailing quote
 			// assign what we have
 			t.assign(sqliTokenTypeString, pos+offset, length-pos-offset, s[pos+offset:])
 			t.strClose = byteNull
 			return length
-		} else if isBackslashEscaped(s[pos+offset : pos+offset+strings.Index(s[pos+offset:], str)]) {
+		case isBackslashEscaped(s[pos+offset : pos+offset+strings.Index(s[pos+offset:], str)]):
 			// keep going, move ahead one character
 			str = str[1:]
 			continue
-		} else if isDoubleDelimiterEscaped(str) {
+		case isDoubleDelimiterEscaped(str):
 			// keep going, move ahead two characters
 			str = str[2:]
 			continue
-		} else {
+		default:
 			// hey it's a normal string
 			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str), s[pos+offset:])
 			t.strClose = delimiter

@@ -2,7 +2,7 @@ package libinjection
 
 import "strings"
 
-func isXss(input string, flags int) bool {
+func isXSS(input string, flags int) bool {
 	var (
 		h5   = new(h5State)
 		attr = attributeTypeNone
@@ -14,15 +14,17 @@ func isXss(input string, flags int) bool {
 			attr = attributeTypeNone
 		}
 
-		if h5.tokenType == html5TypeDocType {
+		switch h5.tokenType {
+
+		case html5TypeDocType:
 			return true
-		} else if h5.tokenType == html5TypeTagNameOpen {
+		case html5TypeTagNameOpen:
 			if isBlackTag(h5.tokenStart[:h5.tokenLen]) {
 				return true
 			}
-		} else if h5.tokenType == html5TypeAttrName {
+		case html5TypeAttrName:
 			attr = isBlackAttr(h5.tokenStart[:h5.tokenLen])
-		} else if h5.tokenType == html5TypeAttrValue {
+		case html5TypeAttrValue:
 			// IE6,7,8 parsing works a bit differently so
 			// a whole <script> or other black tag might be hiding
 			// inside an attribute value under HTML 5 parsing
@@ -36,10 +38,9 @@ func isXss(input string, flags int) bool {
 			case attributeTypeBlack:
 				return true
 			case attributeTypeAttrURL:
-				if isBlackUrl(h5.tokenStart[:h5.tokenLen]) {
+				if isBlackURL(h5.tokenStart[:h5.tokenLen]) {
 					return true
 				}
-				break
 			case attributeTypeStyle:
 				return true
 			case attributeTypeAttrIndirect:
@@ -47,10 +48,9 @@ func isXss(input string, flags int) bool {
 				if isBlackAttr(h5.tokenStart[:h5.tokenLen]) == attributeTypeBlack {
 					return true
 				}
-				break
 			}
 			attr = attributeTypeNone
-		} else if h5.tokenType == html5TypeTagComment {
+		case html5TypeTagComment:
 			// IE uses a "`" as a tag ending byte
 			if strings.IndexByte(h5.tokenStart[:h5.tokenLen], '`') != -1 {
 				return true
@@ -85,12 +85,13 @@ func isXss(input string, flags int) bool {
 	return false
 }
 
+// IsXSS returns true if the input string contains XSS
 func IsXSS(input string) bool {
-	if isXss(input, html5FlagsDataState) ||
-		isXss(input, html5FlagsValueNoQuote) ||
-		isXss(input, html5FlagsValueSingleQuote) ||
-		isXss(input, html5FlagsValueDoubleQuote) ||
-		isXss(input, html5FlagsValueBackQuote) {
+	if isXSS(input, html5FlagsDataState) ||
+		isXSS(input, html5FlagsValueNoQuote) ||
+		isXSS(input, html5FlagsValueSingleQuote) ||
+		isXSS(input, html5FlagsValueDoubleQuote) ||
+		isXSS(input, html5FlagsValueBackQuote) {
 		return true
 	}
 
