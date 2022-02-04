@@ -28,14 +28,6 @@ func TestIsXSS(t *testing.T) {
 		"<a href  =   javascript:alert(1); >",
 		"<a href=\"  javascript:alert(1);\" >",
 		"<a href=\"JAVASCRIPT:alert(1);\" >",
-		"123 LIKE -1234.5678E+2;",
-		"APPLE 19.123 'FOO' \"BAR\"",
-		"/* BAR */ UNION ALL SELECT (2,3,4)",
-		"1 || COS(+0X04) --FOOBAR",
-		"dog apple @cat banana bar",
-		"dog apple cat \"banana 'bar",
-		"102 TABLE CLOTH",
-		"(1001-'1') union select 1,2,3,4 from credit_cards",
 	}
 
 	for _, example := range examples {
