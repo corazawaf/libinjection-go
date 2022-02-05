@@ -1,4 +1,7 @@
-# libinjection
+# libinjection 
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![codecov](https://codecov.io/gh/corazawaf/libinjection-go/branch/master/graph/badge.svg?token=RTCQXUDZQQ)](https://codecov.io/gh/corazawaf/libinjection-go)
+
 libinjection is a Go porting of the libinjection([http://www.client9.com/projects/libinjection/](http://www.client9.com/projects/libinjection/)) and it's thread safe.
 
 ## How to use
