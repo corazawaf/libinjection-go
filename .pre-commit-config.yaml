@@ -10,5 +10,5 @@ repos:
 #      args: [-over=37] # we must drop it down to 15
     - id: golangci-lint
     - id: go-critic
-    #- id: go-unit-tests
+    - id: go-unit-tests
     - id: go-mod-tidy
