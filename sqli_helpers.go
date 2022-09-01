@@ -16,8 +16,9 @@ func flag2Delimiter(flag int) byte {
 }
 
 // OK! "	\"	" one backslash = escaped!
-// 	   "   \\"	" two backslash = not escaped!
-//     "  \\\"	" three backslash = escaped!
+//
+//		   "   \\"	" two backslash = not escaped!
+//	    "  \\\"	" three backslash = escaped!
 func isBackslashEscaped(str string) bool {
 	if !strings.ContainsRune(str, '\\') {
 		return false
@@ -65,9 +66,9 @@ func strLenSpn(s string, length int, accept string) int {
 	return length
 }
 
-func strLenCSpn(s string, length int, accept string) int {
+func strLenCSpn(s string, length int, accept [256]byte) int {
 	for i := 0; i < length; i++ {
-		if strings.ContainsRune(accept, rune(s[i])) {
+		if accept[s[i]] == 1 {
 			return i
 		}
 	}
@@ -83,7 +84,9 @@ func strLenCSpn(s string, length int, accept string) int {
 // the form of /x![anything]x/ or /x!12345[anything]x/
 //
 // MySQL3 (maybe 4), allowed this:
-// 		/x!0selectx/ 1;
+//
+//	/x!0selectx/ 1;
+//
 // where 0 could be any number
 //
 // The last version of MySQL 3 was in 2003.

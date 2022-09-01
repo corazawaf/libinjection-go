@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -101,10 +101,9 @@ func readTestData(filename string) map[string]string {
 	return data
 }
 
-func runSQLiTest(filename, flag string, sqliFlag int) {
+func runSQLiTest(data map[string]string, filename string, flag string, sqliFlag int) {
 	var (
 		actual = ""
-		data   = readTestData(filename)
 		state  = new(sqliState)
 	)
 
@@ -140,24 +139,54 @@ func runSQLiTest(filename, flag string, sqliFlag int) {
 }
 
 func TestSQLiDriver(t *testing.T) {
-	baseDir := "./tests/"
-	dir, err := ioutil.ReadDir(baseDir)
+	baseDir := "tests"
+	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
 		switch {
 		case strings.Contains(fi.Name(), "-sqli-"):
-			runSQLiTest(baseDir+fi.Name(), fingerprints, 0)
+			runSQLiTest(data, p, fingerprints, 0)
 		case strings.Contains(fi.Name(), "-folding-"):
-			runSQLiTest(baseDir+fi.Name(), folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		case strings.Contains(fi.Name(), "-tokens_mysql-"):
-			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
 		case strings.Contains(fi.Name(), "-tokens-"):
-			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		}
 	}
 
 	t.Log("False testing count: ", sqliCount)
+}
+
+func BenchmarkSQLiDriver(b *testing.B) {
+	b.StopTimer()
+	baseDir := "./tests/"
+	dir, err := os.ReadDir(baseDir)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			switch {
+			case strings.Contains(fi.Name(), "-sqli-"):
+				runSQLiTest(data, p, fingerprints, 0)
+			case strings.Contains(fi.Name(), "-folding-"):
+				runSQLiTest(data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			case strings.Contains(fi.Name(), "-tokens_mysql-"):
+				runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			case strings.Contains(fi.Name(), "-tokens-"):
+				runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			}
+		}
+		b.StopTimer()
+	}
 }
