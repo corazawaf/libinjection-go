@@ -164,13 +164,13 @@ func TestSQLiDriver(t *testing.T) {
 }
 
 func BenchmarkSQLiDriver(b *testing.B) {
-	b.StopTimer()
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		b.Fatal(err)
 	}
 
+	b.ResetTimer()
 	for _, fi := range dir {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)

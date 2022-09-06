@@ -121,10 +121,11 @@ func searchKeyword(key []byte, keywords [sqlKeywordsLen]sqlKeyword) byte {
 		right = sqlKeywordsLen - 1
 	)
 
+	upperKey := strings.ToUpper(string(key))
+
 	for left < right {
 		pos := (left + right) >> 1
 
-		upperKey := strings.ToUpper(string(key))
 		switch {
 		case upperKey == keywords[pos].k:
 			return keywords[pos].v
