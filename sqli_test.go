@@ -23,8 +23,6 @@ const (
 	tokens       = "tokens"
 )
 
-var sqliCount = 0
-
 func printTokenString(t *sqliToken) string {
 	out := ""
 	if t.strOpen != 0 {
@@ -101,7 +99,9 @@ func readTestData(filename string) map[string]string {
 	return data
 }
 
-func runSQLiTest(data map[string]string, filename string, flag string, sqliFlag int) {
+func runSQLiTest(t testing.TB, data map[string]string, filename string, flag string, sqliFlag int) {
+	t.Helper()
+
 	var (
 		actual = ""
 		state  = new(sqliState)
@@ -130,11 +130,8 @@ func runSQLiTest(data map[string]string, filename string, flag string, sqliFlag 
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		sqliCount++
-		fmt.Println("FILE: (" + filename + ")")
-		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
-		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
-		fmt.Println("GOT: (" + actual + ")")
+		t.Errorf("FILE: (%s)\nINPUT: (%s)\nEXPECTED: (%s)\nGOT: (%s)\n",
+			filename, data["--INPUT--"], data["--EXPECTED--"], actual)
 	}
 }
 
@@ -150,17 +147,15 @@ func TestSQLiDriver(t *testing.T) {
 		data := readTestData(p)
 		switch {
 		case strings.Contains(fi.Name(), "-sqli-"):
-			runSQLiTest(data, p, fingerprints, 0)
+			runSQLiTest(t, data, p, fingerprints, 0)
 		case strings.Contains(fi.Name(), "-folding-"):
-			runSQLiTest(data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		case strings.Contains(fi.Name(), "-tokens_mysql-"):
-			runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
 		case strings.Contains(fi.Name(), "-tokens-"):
-			runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		}
 	}
-
-	t.Log("False testing count: ", sqliCount)
 }
 
 type testCase struct {
@@ -203,7 +198,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.sqli {
 				tt := tc
-				runSQLiTest(tt.data, tt.name, fingerprints, 0)
+				runSQLiTest(b, tt.data, tt.name, fingerprints, 0)
 			}
 		}
 	})
@@ -212,7 +207,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.folding {
 				tt := tc
-				runSQLiTest(tt.data, tt.name, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+				runSQLiTest(b, tt.data, tt.name, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 			}
 		}
 	})
@@ -221,7 +216,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.tokens {
 				tt := tc
-				runSQLiTest(tt.data, tt.name, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+				runSQLiTest(b, tt.data, tt.name, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 			}
 		}
 	})
