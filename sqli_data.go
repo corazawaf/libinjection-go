@@ -47,275 +47,151 @@ func parseQStringCore(s *sqliState, offset int) int {
 	return pos + 3 + index + 2
 }
 
+type byteParser func(state *sqliState) int
+
+var byteParsers = buildByteParsers()
+
 func parseByteFunctions(s *sqliState, parse byte) int {
-	switch parse {
-	case 0:
-		return parseWhite(s)
-	case 1:
-		return parseWhite(s)
-	case 2:
-		return parseWhite(s)
-	case 3:
-		return parseWhite(s)
-	case 4:
-		return parseWhite(s)
-	case 5:
-		return parseWhite(s)
-	case 6:
-		return parseWhite(s)
-	case 7:
-		return parseWhite(s)
-	case 8:
-		return parseWhite(s)
-	case 9:
-		return parseWhite(s)
-	case 10:
-		return parseWhite(s)
-	case 11:
-		return parseWhite(s)
-	case 12:
-		return parseWhite(s)
-	case 13:
-		return parseWhite(s)
-	case 14:
-		return parseWhite(s)
-	case 15:
-		return parseWhite(s)
-	case 16:
-		return parseWhite(s)
-	case 17:
-		return parseWhite(s)
-	case 18:
-		return parseWhite(s)
-	case 19:
-		return parseWhite(s)
-	case 20:
-		return parseWhite(s)
-	case 21:
-		return parseWhite(s)
-	case 22:
-		return parseWhite(s)
-	case 23:
-		return parseWhite(s)
-	case 24:
-		return parseWhite(s)
-	case 25:
-		return parseWhite(s)
-	case 26:
-		return parseWhite(s)
-	case 27:
-		return parseWhite(s)
-	case 28:
-		return parseWhite(s)
-	case 29:
-		return parseWhite(s)
-	case 30:
-		return parseWhite(s)
-	case 31:
-		return parseWhite(s)
-	case 32:
-		return parseWhite(s)
-	case 33:
-		return parseOperator2(s)
-	case 34:
-		return parseString(s)
-	case 35:
-		return parseHash(s)
-	case 36:
-		return parseMoney(s)
-	case 37:
-		return parseOperator1(s)
-	case 38:
-		return parseOperator2(s)
-	case 39:
-		return parseString(s)
-	case 40:
-		return parseByte(s)
-	case 41:
-		return parseByte(s)
-	case 42:
-		return parseOperator2(s)
-	case 43:
-		return parseOperator1(s)
-	case 44:
-		return parseByte(s)
-	case 45:
-		return parseDash(s)
-	case 46:
-		return parseNumber(s)
-	case 47:
-		return parseSlash(s)
-	case 48:
-		return parseNumber(s)
-	case 49:
-		return parseNumber(s)
-	case 50:
-		return parseNumber(s)
-	case 51:
-		return parseNumber(s)
-	case 52:
-		return parseNumber(s)
-	case 53:
-		return parseNumber(s)
-	case 54:
-		return parseNumber(s)
-	case 55:
-		return parseNumber(s)
-	case 56:
-		return parseNumber(s)
-	case 57:
-		return parseNumber(s)
-	case 58:
-		return parseOperator2(s)
-	case 59:
-		return parseByte(s)
-	case 60:
-		return parseOperator2(s)
-	case 61:
-		return parseOperator2(s)
-	case 62:
-		return parseOperator2(s)
-	case 63:
-		return parseOther(s)
-	case 64:
-		return parseVar(s)
-	case 65:
-		return parseWord(s)
-	case 66:
-		return parseBString(s)
-	case 67:
-		return parseWord(s)
-	case 68:
-		return parseWord(s)
-	case 69:
-		return parseEString(s)
-	case 70:
-		return parseWord(s)
-	case 71:
-		return parseWord(s)
-	case 72:
-		return parseWord(s)
-	case 73:
-		return parseWord(s)
-	case 74:
-		return parseWord(s)
-	case 75:
-		return parseWord(s)
-	case 76:
-		return parseWord(s)
-	case 77:
-		return parseWord(s)
-	case 78:
-		return parseNqString(s)
-	case 79:
-		return parseWord(s)
-	case 80:
-		return parseWord(s)
-	case 81:
-		return parseQString(s)
-	case 82:
-		return parseWord(s)
-	case 83:
-		return parseWord(s)
-	case 84:
-		return parseWord(s)
-	case 85:
-		return parseUString(s)
-	case 86:
-		return parseWord(s)
-	case 87:
-		return parseWord(s)
-	case 88:
-		return parseXString(s)
-	case 89:
-		return parseWord(s)
-	case 90:
-		return parseWord(s)
-	case 91:
-		return parseBWord(s)
-	case 92:
-		return parseBackSlash(s)
-	case 93:
-		return parseOther(s)
-	case 94:
-		return parseOperator1(s)
-	case 95:
-		return parseWord(s)
-	case 96:
-		return parseTick(s)
-	case 97:
-		return parseWord(s)
-	case 98:
-		return parseBString(s)
-	case 99:
-		return parseWord(s)
-	case 100:
-		return parseWord(s)
-	case 101:
-		return parseEString(s)
-	case 102:
-		return parseWord(s)
-	case 103:
-		return parseWord(s)
-	case 104:
-		return parseWord(s)
-	case 105:
-		return parseWord(s)
-	case 106:
-		return parseWord(s)
-	case 107:
-		return parseWord(s)
-	case 108:
-		return parseWord(s)
-	case 109:
-		return parseWord(s)
-	case 110:
-		return parseNqString(s)
-	case 111:
-		return parseWord(s)
-	case 112:
-		return parseWord(s)
-	case 113:
-		return parseQString(s)
-	case 114:
-		return parseWord(s)
-	case 115:
-		return parseWord(s)
-	case 116:
-		return parseWord(s)
-	case 117:
-		return parseUString(s)
-	case 118:
-		return parseWord(s)
-	case 119:
-		return parseWord(s)
-	case 120:
-		return parseXString(s)
-	case 121:
-		return parseWord(s)
-	case 122:
-		return parseWord(s)
-	case 123:
-		return parseByte(s)
-	case 124:
-		return parseOperator2(s)
-	case 125:
-		return parseByte(s)
-	case 126:
-		return parseOperator1(s)
-	case 127:
-		return parseWhite(s)
-	case 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159:
-		return parseWord(s)
-	case 160:
-		return parseWhite(s)
-	case 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192,
-		193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224,
-		225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255:
-		return parseWord(s)
-	default:
-		return parseWord(s)
+	return byteParsers[parse](s)
+}
+
+func buildByteParsers() []byteParser {
+	parsers := make([]byteParser, 256, 256)
+	for i := 0; i < 256; i++ {
+		switch i {
+		case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32:
+			parsers[i] = parseWhite
+		case 33:
+			parsers[i] = parseOperator2
+		case 34:
+			parsers[i] = parseString
+		case 35:
+			parsers[i] = parseHash
+		case 36:
+			parsers[i] = parseMoney
+		case 37:
+			parsers[i] = parseOperator1
+		case 38:
+			parsers[i] = parseOperator2
+		case 39:
+			parsers[i] = parseString
+		case 40, 41:
+			parsers[i] = parseByte
+		case 42:
+			parsers[i] = parseOperator2
+		case 43:
+			parsers[i] = parseOperator1
+		case 44:
+			parsers[i] = parseByte
+		case 45:
+			parsers[i] = parseDash
+		case 46:
+			parsers[i] = parseNumber
+		case 47:
+			parsers[i] = parseSlash
+		case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+			parsers[i] = parseNumber
+		case 58:
+			parsers[i] = parseOperator2
+		case 59:
+			parsers[i] = parseByte
+		case 60, 61, 62:
+			parsers[i] = parseOperator2
+		case 63:
+			parsers[i] = parseOther
+		case 64:
+			parsers[i] = parseVar
+		case 65:
+			parsers[i] = parseWord
+		case 66:
+			parsers[i] = parseBString
+		case 67, 68:
+			parsers[i] = parseWord
+		case 69:
+			parsers[i] = parseEString
+		case 70, 71, 72, 73, 74, 75, 76, 77:
+			parsers[i] = parseWord
+		case 78:
+			parsers[i] = parseNqString
+		case 79, 80:
+			parsers[i] = parseWord
+		case 81:
+			parsers[i] = parseQString
+		case 82:
+			parsers[i] = parseWord
+		case 83:
+			parsers[i] = parseWord
+		case 84:
+			parsers[i] = parseWord
+		case 85:
+			parsers[i] = parseUString
+		case 86, 87:
+			parsers[i] = parseWord
+		case 88:
+			parsers[i] = parseXString
+		case 89, 90:
+			parsers[i] = parseWord
+		case 91:
+			parsers[i] = parseBWord
+		case 92:
+			parsers[i] = parseBackSlash
+		case 93:
+			parsers[i] = parseOther
+		case 94:
+			parsers[i] = parseOperator1
+		case 95:
+			parsers[i] = parseWord
+		case 96:
+			parsers[i] = parseTick
+		case 97:
+			parsers[i] = parseWord
+		case 98:
+			parsers[i] = parseBString
+		case 99, 100:
+			parsers[i] = parseWord
+		case 101:
+			parsers[i] = parseEString
+		case 102, 103, 104, 105, 106, 107, 108, 109:
+			parsers[i] = parseWord
+		case 110:
+			parsers[i] = parseNqString
+		case 111, 112:
+			parsers[i] = parseWord
+		case 113:
+			parsers[i] = parseQString
+		case 114, 115, 116:
+			parsers[i] = parseWord
+		case 117:
+			parsers[i] = parseUString
+		case 118, 119:
+			parsers[i] = parseWord
+		case 120:
+			parsers[i] = parseXString
+		case 121, 122:
+			parsers[i] = parseWord
+		case 123:
+			parsers[i] = parseByte
+		case 124:
+			parsers[i] = parseOperator2
+		case 125:
+			parsers[i] = parseByte
+		case 126:
+			parsers[i] = parseOperator1
+		case 127:
+			parsers[i] = parseWhite
+		case 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159:
+			parsers[i] = parseWord
+		case 160:
+			parsers[i] = parseWhite
+		case 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192,
+			193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224,
+			225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255:
+			parsers[i] = parseWord
+		default:
+			parsers[i] = parseWord
+		}
 	}
+	return parsers
 }
 
 type sqlKeyword struct {
