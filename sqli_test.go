@@ -163,6 +163,11 @@ func TestSQLiDriver(t *testing.T) {
 	t.Log("False testing count: ", sqliCount)
 }
 
+type testCase struct {
+	name string
+	data map[string]string
+}
+
 func BenchmarkSQLiDriver(b *testing.B) {
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
@@ -170,23 +175,54 @@ func BenchmarkSQLiDriver(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
+	cases := struct {
+		sqli        []testCase
+		folding     []testCase
+		tokensMySQL []testCase
+		tokens      []testCase
+	}{}
+
 	for _, fi := range dir {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
-		b.StartTimer()
+		tc := testCase{
+			name: fi.Name(),
+			data: data,
+		}
+		switch {
+		case strings.Contains(fi.Name(), "-sqli-"):
+			cases.sqli = append(cases.sqli, tc)
+		case strings.Contains(fi.Name(), "-folding-"):
+			cases.folding = append(cases.folding, tc)
+		case strings.Contains(fi.Name(), "-tokens-"):
+			cases.tokens = append(cases.tokens, tc)
+		}
+	}
+
+	b.Run("sqli", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			switch {
-			case strings.Contains(fi.Name(), "-sqli-"):
-				runSQLiTest(data, p, fingerprints, 0)
-			case strings.Contains(fi.Name(), "-folding-"):
-				runSQLiTest(data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
-			case strings.Contains(fi.Name(), "-tokens_mysql-"):
-				runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
-			case strings.Contains(fi.Name(), "-tokens-"):
-				runSQLiTest(data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			for _, tc := range cases.sqli {
+				tt := tc
+				runSQLiTest(tt.data, tt.name, fingerprints, 0)
 			}
 		}
-		b.StopTimer()
-	}
+	})
+
+	b.Run("folding", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.folding {
+				tt := tc
+				runSQLiTest(tt.data, tt.name, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			}
+		}
+	})
+
+	b.Run("tokens", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.tokens {
+				tt := tc
+				runSQLiTest(tt.data, tt.name, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			}
+		}
+	})
 }

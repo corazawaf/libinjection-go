@@ -325,7 +325,7 @@ type sqlKeyword struct {
 
 const sqlKeywordsLen = 9352
 
-var sqlKeywords = [9352]sqlKeyword{
+var sqlKeywords = []sqlKeyword{
 	{"!!", 'o'},
 	{"!<", 'o'},
 	{"!=", 'o'},
