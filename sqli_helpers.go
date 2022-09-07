@@ -67,7 +67,7 @@ func strLenSpn(s string, length int, accept string) int {
 	return length
 }
 
-func strLenCSpn(s string, length int, accept [256]byte) int {
+func strLenCSpn(s string, length int, accept []byte) int {
 	for i := 0; i < length; i++ {
 		if accept[s[i]] == 1 {
 			return i
