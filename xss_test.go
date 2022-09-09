@@ -2,7 +2,7 @@ package libinjection
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -108,7 +108,7 @@ func runXSSTest(filename, flag string) {
 
 func TestXSSDriver(t *testing.T) {
 	baseDir := "./tests/"
-	dir, err := ioutil.ReadDir(baseDir)
+	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		t.Fatal(err)
 	}
