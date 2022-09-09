@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-type lookup func(lookupType int, word []byte) byte
-
 type sqliState struct {
 	// input, does not need to be null terminated, it is also not modified.
 	input string

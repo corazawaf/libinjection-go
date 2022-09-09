@@ -488,7 +488,7 @@ func parseBWord(s *sqliState) int {
 
 func buildAcceptTable(acceptStr string) []byte {
 	accept := []byte(acceptStr)
-	acceptTable := make([]byte, 256, 256)
+	acceptTable := make([]byte, 256)
 	for i := 0; i < 256; i++ {
 		if bytes.IndexByte(accept, byte(i)) != -1 {
 			acceptTable[i] = 1
