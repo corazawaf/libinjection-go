@@ -5,16 +5,12 @@ import (
 	"strings"
 )
 
-type lookup func(lookupType int, word []byte) byte
-
 type sqliState struct {
 	// input, does not need to be null terminated, it is also not modified.
 	input string
 
 	// length, input length
 	length int
-
-	lookup lookup
 
 	flags int
 
@@ -75,7 +71,6 @@ func sqliInit(s *sqliState, input string, flags int) {
 	*s = sqliState{}
 	s.input = input
 	s.length = len(input)
-	s.lookup = s.lookupWord
 	s.flags = flags
 	s.current = &s.tokenVec[0]
 }
@@ -83,11 +78,12 @@ func sqliInit(s *sqliState, input string, flags int) {
 // secondary api: detects SQLi in a string, GIVEN a context.
 //
 // A context can be:
-// 		ByteNull (\0), process as is
-// 		ByteSingle ('), process pretending input started with a
-// 		    single quote.
-//      ByteDouble ("), process pretending input started with a
-//          double quote.
+//
+//			ByteNull (\0), process as is
+//			ByteSingle ('), process pretending input started with a
+//			    single quote.
+//	     ByteDouble ("), process pretending input started with a
+//	         double quote.
 func (s *sqliState) sqliFingerprint(flags int) []byte {
 	s.reset(flags)
 	length := s.fold()
@@ -174,7 +170,7 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 	copy(tmp[tokenA.len+1:], tokenB.val[:tokenB.len])
 
 	length := tokenA.len + tokenB.len + 1
-	ch := s.lookup(sqliLookupWord, tmp[:length])
+	ch := s.lookupWord(sqliLookupWord, tmp[:length])
 	if ch != byteNull {
 		tokenA.assign(ch, tokenA.pos, length, string(tmp[:length]))
 		return true
@@ -844,13 +840,10 @@ func (s *sqliState) lookupWord(lookupType int, word []byte) byte {
 }
 
 func (s *sqliState) reset(flags int) {
-	lookup := s.lookup
-
 	if flags == 0 {
 		flags = sqliFlagQuoteNone | sqliFlagSQLAnsi
 	}
 	sqliInit(s, s.input, flags)
-	s.lookup = lookup
 }
 
 // Main API, detects SQLi in an input
@@ -866,11 +859,11 @@ func (s *sqliState) check() bool {
 
 	// test input "as-is"
 	s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLAnsi)
-	if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
+	if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 		return true
 	} else if s.reparseAsMySQL() {
 		s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLMysql)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}
@@ -880,11 +873,11 @@ func (s *sqliState) check() bool {
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
 	if strings.ContainsRune(s.input, rune(byteSingle)) {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		} else if s.reparseAsMySQL() {
 			s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLMysql)
-			if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
+			if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 				return true
 			}
 		}
@@ -893,7 +886,7 @@ func (s *sqliState) check() bool {
 	// same as above but with a double quote
 	if strings.ContainsRune(s.input, rune(byteDouble)) {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
-		if s.lookup(sqliLookupFingerprint, s.fingerprint) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}

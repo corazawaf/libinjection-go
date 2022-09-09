@@ -1,6 +1,7 @@
 package libinjection
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -16,8 +17,9 @@ func flag2Delimiter(flag int) byte {
 }
 
 // OK! "	\"	" one backslash = escaped!
-// 	   "   \\"	" two backslash = not escaped!
-//     "  \\\"	" three backslash = escaped!
+//
+//		   "   \\"	" two backslash = not escaped!
+//	    "  \\\"	" three backslash = escaped!
 func isBackslashEscaped(str string) bool {
 	if !strings.ContainsRune(str, '\\') {
 		return false
@@ -65,9 +67,9 @@ func strLenSpn(s string, length int, accept string) int {
 	return length
 }
 
-func strLenCSpn(s string, length int, accept string) int {
+func strLenCSpn(s string, length int, accept []byte) int {
 	for i := 0; i < length; i++ {
-		if strings.ContainsRune(accept, rune(s[i])) {
+		if accept[s[i]] == 1 {
 			return i
 		}
 	}
@@ -83,7 +85,9 @@ func strLenCSpn(s string, length int, accept string) int {
 // the form of /x![anything]x/ or /x!12345[anything]x/
 //
 // MySQL3 (maybe 4), allowed this:
-// 		/x!0selectx/ 1;
+//
+//	/x!0selectx/ 1;
+//
 // where 0 could be any number
 //
 // The last version of MySQL 3 was in 2003.
@@ -112,24 +116,15 @@ func isKeyword(key []byte) byte {
 	return searchKeyword(key, sqlKeywords)
 }
 
-func searchKeyword(key []byte, keywords [sqlKeywordsLen]sqlKeyword) byte {
-	var (
-		left  = 0
-		right = sqlKeywordsLen - 1
-	)
+func searchKeyword(key []byte, keywords []sqlKeyword) byte {
+	upperKey := strings.ToUpper(string(key))
 
-	for left < right {
-		pos := (left + right) >> 1
+	i := sort.Search(sqlKeywordsLen, func(i int) bool {
+		return keywords[i].k >= upperKey
+	})
 
-		upperKey := strings.ToUpper(string(key))
-		switch {
-		case upperKey == keywords[pos].k:
-			return keywords[pos].v
-		case upperKey > keywords[pos].k:
-			left = pos + 1
-		default:
-			right = pos
-		}
+	if i < sqlKeywordsLen && keywords[i].k == upperKey {
+		return keywords[i].v
 	}
 
 	return byteNull

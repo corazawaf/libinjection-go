@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -22,8 +22,6 @@ const (
 	folding      = "folding"
 	tokens       = "tokens"
 )
-
-var sqliCount = 0
 
 func printTokenString(t *sqliToken) string {
 	out := ""
@@ -101,10 +99,11 @@ func readTestData(filename string) map[string]string {
 	return data
 }
 
-func runSQLiTest(filename, flag string, sqliFlag int) {
+func runSQLiTest(t testing.TB, data map[string]string, filename string, flag string, sqliFlag int) {
+	t.Helper()
+
 	var (
 		actual = ""
-		data   = readTestData(filename)
 		state  = new(sqliState)
 	)
 
@@ -131,33 +130,94 @@ func runSQLiTest(filename, flag string, sqliFlag int) {
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		sqliCount++
-		fmt.Println("FILE: (" + filename + ")")
-		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
-		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
-		fmt.Println("GOT: (" + actual + ")")
+		t.Errorf("FILE: (%s)\nINPUT: (%s)\nEXPECTED: (%s)\nGOT: (%s)\n",
+			filename, data["--INPUT--"], data["--EXPECTED--"], actual)
 	}
 }
 
 func TestSQLiDriver(t *testing.T) {
-	baseDir := "./tests/"
-	dir, err := ioutil.ReadDir(baseDir)
+	baseDir := "tests"
+	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
 		switch {
 		case strings.Contains(fi.Name(), "-sqli-"):
-			runSQLiTest(baseDir+fi.Name(), fingerprints, 0)
+			runSQLiTest(t, data, p, fingerprints, 0)
 		case strings.Contains(fi.Name(), "-folding-"):
-			runSQLiTest(baseDir+fi.Name(), folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
 		case strings.Contains(fi.Name(), "-tokens_mysql-"):
-			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
 		case strings.Contains(fi.Name(), "-tokens-"):
-			runSQLiTest(baseDir+fi.Name(), tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+		}
+	}
+}
+
+type testCase struct {
+	name string
+	data map[string]string
+}
+
+func BenchmarkSQLiDriver(b *testing.B) {
+	baseDir := "./tests/"
+	dir, err := os.ReadDir(baseDir)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	cases := struct {
+		sqli        []testCase
+		folding     []testCase
+		tokensMySQL []testCase
+		tokens      []testCase
+	}{}
+
+	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
+		tc := testCase{
+			name: fi.Name(),
+			data: data,
+		}
+		switch {
+		case strings.Contains(fi.Name(), "-sqli-"):
+			cases.sqli = append(cases.sqli, tc)
+		case strings.Contains(fi.Name(), "-folding-"):
+			cases.folding = append(cases.folding, tc)
+		case strings.Contains(fi.Name(), "-tokens-"):
+			cases.tokens = append(cases.tokens, tc)
 		}
 	}
 
-	t.Log("False testing count: ", sqliCount)
+	b.Run("sqli", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.sqli {
+				tt := tc
+				runSQLiTest(b, tt.data, tt.name, fingerprints, 0)
+			}
+		}
+	})
+
+	b.Run("folding", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.folding {
+				tt := tc
+				runSQLiTest(b, tt.data, tt.name, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			}
+		}
+	})
+
+	b.Run("tokens", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.tokens {
+				tt := tc
+				runSQLiTest(b, tt.data, tt.name, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			}
+		}
+	})
 }
