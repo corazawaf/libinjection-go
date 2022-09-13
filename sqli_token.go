@@ -89,11 +89,7 @@ func (t *sqliToken) assignByte(tokenType byte, pos, _ int, value byte) {
 	t.category = tokenType
 	t.pos = pos
 	t.len = 1
-	if len(t.val) > 0 {
-		t.val = string(value) + t.val[1:]
-	} else {
-		t.val = string(value)
-	}
+	t.val = string(value)
 }
 
 func (t *sqliToken) isUnaryOp() bool {
@@ -107,7 +103,7 @@ func (t *sqliToken) isUnaryOp() bool {
 	case 2:
 		return t.val[0] == '!' && t.val[1] == '!'
 	case 3:
-		return toUpperCmp("NOT", string(t.val[:3]))
+		return toUpperCmp("NOT", t.val[:3])
 	default:
 		return false
 	}

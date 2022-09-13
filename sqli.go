@@ -1,7 +1,6 @@
 package libinjection
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -24,7 +23,7 @@ type sqliState struct {
 	current *sqliToken
 
 	// fingerprint pattern c-string, +1 form ending null
-	fingerprint []byte
+	fingerprint string
 
 	// |----------------------------------------|
 	// |            |/**/	|--[start]      |#  |
@@ -84,7 +83,7 @@ func sqliInit(s *sqliState, input string, flags int) {
 //			    single quote.
 //	     ByteDouble ("), process pretending input started with a
 //	         double quote.
-func (s *sqliState) sqliFingerprint(flags int) []byte {
+func (s *sqliState) sqliFingerprint(flags int) string {
 	s.reset(flags)
 	length := s.fold()
 
@@ -103,25 +102,28 @@ func (s *sqliState) sqliFingerprint(flags int) []byte {
 		s.tokenVec[length-1].category = sqliTokenTypeComment
 	}
 
+	fp := strings.Builder{}
+
 	for i := 0; i < length; i++ {
-		s.fingerprint = append(s.fingerprint, s.tokenVec[i].category)
+		c := s.tokenVec[i].category
+		// check for 'X' in pattern, and then
+		// clear out all tokens
+		//
+		// this means parsing could not be done
+		// accurately due to pgsql's double comments
+		// or other syntax that isn't consistent.
+		// Should be very rare false positive
+		if c == sqliTokenTypeEvil {
+			s.fingerprint = string(sqliTokenTypeEvil)
+			s.tokenVec[0].category = sqliTokenTypeEvil
+			s.tokenVec[0].val = string(sqliTokenTypeEvil)
+			return s.fingerprint
+		}
+
+		fp.WriteByte(c)
 	}
 
-	// check for 'X' in pattern, and then
-	// clear out all tokens
-	//
-	// this means parsing could not be done
-	// accurately due to pgsql's double comments
-	// or other syntax that isn't consistent.
-	// Should be very rare false positive
-	if bytes.ContainsAny(s.fingerprint, string(sqliTokenTypeEvil)) {
-		s.fingerprint = s.fingerprint[:0]
-		s.fingerprint = append(s.fingerprint, sqliTokenTypeEvil)
-
-		s.tokenVec[0].category = sqliTokenTypeEvil
-		s.tokenVec[0].val = string(sqliTokenTypeEvil)
-	}
-
+	s.fingerprint = fp.String()
 	return s.fingerprint
 }
 
@@ -789,8 +791,8 @@ func (s *sqliState) notWhitelist() bool {
 		// no opening quote, no closing quote
 		// and each string has data
 		// sos || s&s are string and operator || logic operator and string
-		switch {
-		case string(s.fingerprint) == "sos" || string(s.fingerprint) == "s&s":
+		switch s.fingerprint {
+		case "sos", "s&s":
 			if s.tokenVec[0].strOpen == byteNull &&
 				s.tokenVec[2].strClose == byteNull &&
 				s.tokenVec[0].strClose == s.tokenVec[2].strOpen {
@@ -803,22 +805,17 @@ func (s *sqliState) notWhitelist() bool {
 			}
 
 			return false
-		case string(s.fingerprint) == "s&n" ||
-			string(s.fingerprint) == "n&1" ||
-			string(s.fingerprint) == "1&1" ||
-			string(s.fingerprint) == "1&v" ||
-			string(s.fingerprint) == "1&s":
+		case "s&n", "n&1", "1&1", "1&v", "1&s":
 			// 'sexy and 17' not SQLi
 			// 'sexy and 17<18' SQLi
 			if s.statsTokens == 3 {
 				return false
 			}
-		case s.tokenVec[1].category == sqliTokenTypeKeyword:
-			if s.tokenVec[1].len < 5 || !toUpperCmp("INTO", s.tokenVec[1].val[:4]) {
-				// if it's not "INTO OUTFILE", or "INTO DUMPFILE" (MySQL)
-				// then treat as safe
-				return false
-			}
+		}
+		if s.tokenVec[1].category == sqliTokenTypeKeyword && (s.tokenVec[1].len < 5 || !toUpperCmp("INTO", s.tokenVec[1].val[:4])) {
+			// if it's not "INTO OUTFILE", or "INTO DUMPFILE" (MySQL)
+			// then treat as safe
+			return false
 		}
 	}
 
@@ -859,11 +856,11 @@ func (s *sqliState) check() bool {
 
 	// test input "as-is"
 	s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLAnsi)
-	if s.lookupWord(sqliLookupFingerprint, string(s.fingerprint)) != byteNull {
+	if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 		return true
 	} else if s.reparseAsMySQL() {
 		s.sqliFingerprint(sqliFlagQuoteNone | sqliFlagSQLMysql)
-		if s.lookupWord(sqliLookupFingerprint, string(s.fingerprint)) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}
@@ -873,11 +870,11 @@ func (s *sqliState) check() bool {
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
 	if strings.ContainsRune(s.input, rune(byteSingle)) {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
-		if s.lookupWord(sqliLookupFingerprint, string(s.fingerprint)) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		} else if s.reparseAsMySQL() {
 			s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLMysql)
-			if s.lookupWord(sqliLookupFingerprint, string(s.fingerprint)) != byteNull {
+			if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 				return true
 			}
 		}
@@ -886,7 +883,7 @@ func (s *sqliState) check() bool {
 	// same as above but with a double quote
 	if strings.ContainsRune(s.input, rune(byteDouble)) {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
-		if s.lookupWord(sqliLookupFingerprint, string(s.fingerprint)) != byteNull {
+		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
 		}
 	}
@@ -897,12 +894,12 @@ func (s *sqliState) check() bool {
 
 // IsSQLi returns true if the input is SQLi
 // It also returns the fingerprint of the SQL Injection as []byte
-func IsSQLi(input string) (bool, []byte) {
+func IsSQLi(input string) (bool, string) {
 	state := new(sqliState)
 	sqliInit(state, input, 0)
 	result := state.check()
 	if result {
 		return result, state.fingerprint
 	}
-	return result, []byte{}
+	return result, ""
 }
