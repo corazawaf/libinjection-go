@@ -1,0 +1,27 @@
+name: Create Release
+on:
+  push:
+    branches:
+      - main
+      - master
+jobs:
+  release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: 'Get next minor version'
+        id: semvers
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.previoustag.outputs.tag }}        
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.semvers.tag }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_REPOSITORY: corazawaf/libinjection-go
