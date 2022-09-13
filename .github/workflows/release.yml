@@ -9,6 +9,8 @@ on:
       - "**/*.txt"
       - "**/*_test.go"
       - "LICENSE"
+      - ".gitignore"
+      - ".github/**"
 jobs:
   release:
     runs-on: ubuntu-22.04
