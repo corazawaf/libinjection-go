@@ -12,16 +12,14 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: 'Get next minor version'
-        id: semvers
-        uses: "WyriHaximus/github-action-next-semvers@v1"
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.0
         with:
-          version: ${{ steps.previoustag.outputs.tag }}        
-      - name: Release
-        uses: softprops/action-gh-release@v1
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.version.semvers.tag }}
-          generate_release_notes: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          GITHUB_REPOSITORY: corazawaf/libinjection-go
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
