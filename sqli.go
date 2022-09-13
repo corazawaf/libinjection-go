@@ -165,16 +165,10 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 		return false
 	}
 
-	// oddly annoying last.val + ' ' + current.val
-	var tmp [tokenSize]byte
-	copy(tmp[:], tokenA.val[:tokenA.len])
-	tmp[tokenA.len] = ' '
-	copy(tmp[tokenA.len+1:], tokenB.val[:tokenB.len])
-
-	length := tokenA.len + tokenB.len + 1
-	ch := s.lookupWord(sqliLookupWord, string(tmp[:length]))
+	tmp := tokenA.val[:tokenA.len] + " " + tokenB.val[:tokenB.len]
+	ch := s.lookupWord(sqliLookupWord, tmp)
 	if ch != byteNull {
-		tokenA.assign(ch, tokenA.pos, length, string(tmp[:length]))
+		tokenA.assign(ch, tokenA.pos, len(tmp), tmp)
 		return true
 	}
 	return false
