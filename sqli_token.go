@@ -85,13 +85,6 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.val = value[:last]
 }
 
-func (t *sqliToken) assignByte(tokenType byte, pos, _ int, value byte) {
-	t.category = tokenType
-	t.pos = pos
-	t.len = 1
-	t.val = string(value)
-}
-
 func (t *sqliToken) isUnaryOp() bool {
 	if t.category != sqliTokenTypeOperator {
 		return false

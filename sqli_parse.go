@@ -21,7 +21,7 @@ func parseEolComment(s *sqliState) int {
 
 func parseMoney(s *sqliState) int {
 	if s.pos+1 == s.length {
-		s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
+		s.current.assign(sqliTokenTypeBareWord, s.pos, 1, "$")
 		return s.length
 	}
 
@@ -48,14 +48,14 @@ func parseMoney(s *sqliState) int {
 		xlen := strLenSpn(s.input[s.pos+1:], s.length-s.pos-1, "abcdefghjiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 		if xlen == 0 {
 			// hmm, it's "$" _something_ .. just add $ and keep going
-			s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
+			s.current.assign(sqliTokenTypeBareWord, s.pos, 1, "$")
 			return s.pos + 1
 		}
 
 		// we have $foobar?????
 		if s.pos+xlen+1 == s.length || s.input[s.pos+xlen+1] != '$' {
 			// not $foobar$, or fell off edge
-			s.current.assignByte(sqliTokenTypeBareWord, s.pos, 1, '$')
+			s.current.assign(sqliTokenTypeBareWord, s.pos, 1, "$")
 			return s.pos + 1
 		}
 
@@ -81,7 +81,7 @@ func parseMoney(s *sqliState) int {
 }
 
 func parseOther(s *sqliState) int {
-	s.current.assignByte(sqliTokenTypeUnknown, s.pos, 1, s.input[s.pos])
+	s.current.assign(sqliTokenTypeUnknown, s.pos, 1, s.input[s.pos:])
 	return s.pos + 1
 }
 
@@ -90,12 +90,12 @@ func parseWhite(s *sqliState) int {
 }
 
 func parseOperator1(s *sqliState) int {
-	s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, s.input[s.pos])
+	s.current.assign(sqliTokenTypeOperator, s.pos, 1, s.input[s.pos:])
 	return s.pos + 1
 }
 
 func parseByte(s *sqliState) int {
-	s.current.assignByte(s.input[s.pos], s.pos, 1, s.input[s.pos])
+	s.current.assign(s.input[s.pos], s.pos, 1, s.input[s.pos:])
 	return s.pos + 1
 }
 
@@ -107,7 +107,7 @@ func parseHash(s *sqliState) int {
 		s.statsCommentHash++
 		return parseEolComment(s)
 	}
-	s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, '#')
+	s.current.assign(sqliTokenTypeOperator, s.pos, 1, "#")
 	return s.pos + 1
 }
 
@@ -128,7 +128,7 @@ func parseDash(s *sqliState) int {
 		s.statsCommentDDX++
 		return parseEolComment(s)
 	default:
-		s.current.assignByte(sqliTokenTypeOperator, s.pos, 1, '-')
+		s.current.assign(sqliTokenTypeOperator, s.pos, 1, "-")
 		return s.pos + 1
 	}
 }
@@ -174,7 +174,7 @@ func parseBackSlash(s *sqliState) int {
 		s.current.assign(sqliTokenTypeNumber, s.pos, 2, s.input[s.pos:])
 		return s.pos + 2
 	}
-	s.current.assignByte(sqliTokenTypeBackslash, s.pos, 1, s.input[s.pos])
+	s.current.assign(sqliTokenTypeBackslash, s.pos, 1, s.input[s.pos:])
 	return s.pos + 1
 }
 
@@ -321,7 +321,7 @@ func parseNumber(s *sqliState) int {
 
 		if pos-start == 1 {
 			// only one character read so far
-			s.current.assignByte(sqliTokenTypeDot, start, 1, '.')
+			s.current.assign(sqliTokenTypeDot, start, 1, ".")
 			return pos
 		}
 	}
