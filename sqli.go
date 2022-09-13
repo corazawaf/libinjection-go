@@ -664,23 +664,25 @@ func (s *sqliState) tokenize() bool {
 //
 // return TRUE if SQLi, false otherwise
 func (s *sqliState) blacklist() bool {
-	var fp []byte
 
 	length := len(s.fingerprint)
 	if length < 1 {
 		return false
 	}
 
-	fp = append(fp, '0')
+	fp := strings.Builder{}
+	fp.Grow(length + 1)
+
+	fp.WriteByte('0')
 	for i := 0; i < length; i++ {
 		ch := s.fingerprint[i]
 		if ch >= 'a' && ch <= 'z' {
 			ch -= 0x20
 		}
-		fp = append(fp, ch)
+		fp.WriteByte(ch)
 	}
 
-	return isKeyword(fp) == sqliTokenTypeFingerprint
+	return isKeyword(fp.String()) == sqliTokenTypeFingerprint
 }
 
 // Given a positive match for a pattern (i.e. pattern is SQLi), this function
