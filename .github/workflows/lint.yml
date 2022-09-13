@@ -2,7 +2,13 @@ name: lint (pre-commit)
 
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"  
   push:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
 
 jobs:
   pre-commit:
