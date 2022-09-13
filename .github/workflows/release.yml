@@ -4,6 +4,11 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      - "**/*.md"
+      - "**/*.txt"
+      - "**/*_test.go"
+      - "LICENSE"
 jobs:
   release:
     runs-on: ubuntu-20.04
