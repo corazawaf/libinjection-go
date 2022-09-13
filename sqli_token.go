@@ -23,7 +23,7 @@ const (
 
 // Look forward for doubling of delimiter
 //
-// case 'foo”bar' -> foo”bar
+// case 'foo''bar' -> foo''bar
 //
 // ending quote is not duplicated (i.e. escaped)
 // since it's the wrong or EOL
