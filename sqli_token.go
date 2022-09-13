@@ -13,7 +13,7 @@ type sqliToken struct {
 	category byte
 	strOpen  byte
 	strClose byte
-	val      [32]byte
+	val      string
 }
 
 const (
@@ -23,7 +23,7 @@ const (
 
 // Look forward for doubling of delimiter
 //
-// case 'foo''bar' -> foo''bar
+// case 'foo”bar' -> foo”bar
 //
 // ending quote is not duplicated (i.e. escaped)
 // since it's the wrong or EOL
@@ -82,16 +82,18 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.category = tokenType
 	t.pos = pos
 	t.len = last
-	for i := 0; i < last; i++ {
-		t.val[i] = value[i]
-	}
+	t.val = value[:last]
 }
 
-func (t *sqliToken) assignByte(tokenType byte, pos, len int, value byte) {
+func (t *sqliToken) assignByte(tokenType byte, pos, _ int, value byte) {
 	t.category = tokenType
 	t.pos = pos
 	t.len = 1
-	t.val[0] = value
+	if len(t.val) > 0 {
+		t.val = string(value) + t.val[1:]
+	} else {
+		t.val = string(value)
+	}
 }
 
 func (t *sqliToken) isUnaryOp() bool {

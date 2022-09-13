@@ -189,7 +189,7 @@ func parseOperator2(s *sqliState) int {
 		return s.pos + 3
 	}
 
-	ch := s.lookupWord(sqliLookupOperator, []byte(s.input[s.pos:s.pos+2]))
+	ch := s.lookupWord(sqliLookupOperator, s.input[s.pos:s.pos+2])
 	if ch != byteNull {
 		s.current.assign(ch, s.pos, 2, s.input[s.pos:])
 		return s.pos + 2
