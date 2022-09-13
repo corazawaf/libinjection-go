@@ -1,7 +1,6 @@
 package libinjection
 
 import (
-	"sort"
 	"strings"
 )
 
@@ -116,15 +115,11 @@ func isKeyword(key []byte) byte {
 	return searchKeyword(key, sqlKeywords)
 }
 
-func searchKeyword(key []byte, keywords []sqlKeyword) byte {
+func searchKeyword(key []byte, keywords map[string]byte) byte {
 	upperKey := strings.ToUpper(string(key))
 
-	i := sort.Search(sqlKeywordsLen, func(i int) bool {
-		return keywords[i].k >= upperKey
-	})
-
-	if i < sqlKeywordsLen && keywords[i].k == upperKey {
-		return keywords[i].v
+	if val, ok := keywords[upperKey]; ok {
+		return val
 	}
 
 	return byteNull
