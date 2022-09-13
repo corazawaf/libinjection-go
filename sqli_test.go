@@ -195,6 +195,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 	}
 
 	b.Run("sqli", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.sqli {
 				tt := tc
@@ -204,6 +205,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 	})
 
 	b.Run("folding", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.folding {
 				tt := tc
@@ -213,6 +215,7 @@ func BenchmarkSQLiDriver(b *testing.B) {
 	})
 
 	b.Run("tokens", func(b *testing.B) {
+		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			for _, tc := range cases.tokens {
 				tt := tc

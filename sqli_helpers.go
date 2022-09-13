@@ -111,12 +111,12 @@ func toUpperCmp(a, b string) bool {
 	return a == strings.ToUpper(b)
 }
 
-func isKeyword(key []byte) byte {
+func isKeyword(key string) byte {
 	return searchKeyword(key, sqlKeywords)
 }
 
-func searchKeyword(key []byte, keywords map[string]byte) byte {
-	upperKey := strings.ToUpper(string(key))
+func searchKeyword(key string, keywords map[string]byte) byte {
+	upperKey := strings.ToUpper(key)
 
 	if val, ok := keywords[upperKey]; ok {
 		return val

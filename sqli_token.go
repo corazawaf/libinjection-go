@@ -13,7 +13,7 @@ type sqliToken struct {
 	category byte
 	strOpen  byte
 	strClose byte
-	val      [32]byte
+	val      string
 }
 
 const (
@@ -82,16 +82,7 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.category = tokenType
 	t.pos = pos
 	t.len = last
-	for i := 0; i < last; i++ {
-		t.val[i] = value[i]
-	}
-}
-
-func (t *sqliToken) assignByte(tokenType byte, pos, len int, value byte) {
-	t.category = tokenType
-	t.pos = pos
-	t.len = 1
-	t.val[0] = value
+	t.val = value[:last]
 }
 
 func (t *sqliToken) isUnaryOp() bool {
@@ -105,7 +96,7 @@ func (t *sqliToken) isUnaryOp() bool {
 	case 2:
 		return t.val[0] == '!' && t.val[1] == '!'
 	case 3:
-		return toUpperCmp("NOT", string(t.val[:3]))
+		return toUpperCmp("NOT", t.val[:3])
 	default:
 		return false
 	}
