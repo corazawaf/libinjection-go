@@ -381,7 +381,7 @@ func (s *sqliState) fold() int {
 		case s.tokenVec[left].category == sqliTokenTypeCollate && s.tokenVec[left+1].category == sqliTokenTypeBareWord:
 			// there are too many collation types.. so if the bareword has a "_"
 			// then it's TYPE_SQLTYPE
-			if strings.ContainsRune(s.tokenVec[left+1].val[:], '_') {
+			if strings.IndexByte(s.tokenVec[left+1].val[:], '_') != -1 {
 				s.tokenVec[left+1].category = sqliTokenTypeSQLType
 				left = 0
 			}
@@ -864,7 +864,7 @@ func (s *sqliState) check() bool {
 	// if input has a single quote, then
 	// test as if input was actually '
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
-	if strings.ContainsRune(s.input, rune(byteSingle)) {
+	if strings.IndexByte(s.input, byteSingle) != -1 {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
 		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
@@ -877,7 +877,7 @@ func (s *sqliState) check() bool {
 	}
 
 	// same as above but with a double quote
-	if strings.ContainsRune(s.input, rune(byteDouble)) {
+	if strings.IndexByte(s.input, byteDouble) != -1 {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
 		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
