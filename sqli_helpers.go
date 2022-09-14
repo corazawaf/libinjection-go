@@ -20,7 +20,7 @@ func flag2Delimiter(flag int) byte {
 //		   "   \\"	" two backslash = not escaped!
 //	    "  \\\"	" three backslash = escaped!
 func isBackslashEscaped(str string) bool {
-	if !strings.ContainsRune(str, '\\') {
+	if strings.IndexByte(str, '\\') == -1 {
 		return false
 	}
 
@@ -58,7 +58,7 @@ func isByteWhite(ch byte) bool {
 // regexp.match(str, "[ABC]*")
 func strLenSpn(s string, length int, accept string) int {
 	for i := 0; i < length; i++ {
-		if !strings.ContainsRune(accept, rune(s[i])) {
+		if strings.IndexByte(accept, s[i]) == -1 {
 			return i
 		}
 	}
