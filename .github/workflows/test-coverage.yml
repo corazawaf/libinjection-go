@@ -1,6 +1,14 @@
 name: Test and coverage
 
-on: [push, pull_request]
+on: 
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+  push:
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
 
 jobs:
   build:
