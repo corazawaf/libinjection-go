@@ -13,22 +13,17 @@ func isBlackTag(s string) bool {
 		return false
 	}
 
+	sUpper := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	for i := 0; i < len(blackTags); i++ {
-		if strings.ToUpper(strings.ReplaceAll(s, "\x00", "")) == blackTags[i] {
+		if sUpper == blackTags[i] {
 			return true
 		}
 	}
 
-	// anything SVG related
-	if strings.ToUpper(s) == "SVG" {
+	// anything SVG related or XSL(t) related
+	if sUpper == "SVG" || sUpper == "XSL" {
 		return true
 	}
-
-	// anything XSL(t) related
-	if strings.ToUpper(s) == "XSL" {
-		return true
-	}
-
 	return false
 }
 
@@ -38,6 +33,7 @@ func isBlackAttr(s string) int {
 		return attributeTypeNone
 	}
 
+	sUpper := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	if length >= 5 {
 		// javascript on.*
 		if strings.ToUpper(s[:2]) == "ON" {
@@ -45,15 +41,14 @@ func isBlackAttr(s string) int {
 			return attributeTypeBlack
 		}
 
-		if strings.ToUpper(strings.ReplaceAll(s, "\x00", "")) == "XMLNS" ||
-			strings.ToUpper(strings.ReplaceAll(s, "\x00", "")) == "XLINK" {
+		if sUpper == "XMLNS" || sUpper == "XLINK" {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
 		}
 	}
 
 	for _, black := range blacks {
-		if strings.ToUpper(strings.ReplaceAll(s, "\x00", "")) == black.name {
+		if sUpper == black.name {
 			// got banner attribute name
 			return black.attributeType
 		}
