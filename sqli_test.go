@@ -136,7 +136,7 @@ func runSQLiTest(t testing.TB, data map[string]string, filename string, flag str
 }
 
 func TestSQLiDriver(t *testing.T) {
-	baseDir := "tests"
+	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		t.Fatal(err)
@@ -158,7 +158,7 @@ func TestSQLiDriver(t *testing.T) {
 	}
 }
 
-type testCase struct {
+type testCaseSQLI struct {
 	name string
 	data map[string]string
 }
@@ -171,16 +171,16 @@ func BenchmarkSQLiDriver(b *testing.B) {
 	}
 
 	cases := struct {
-		sqli        []testCase
-		folding     []testCase
-		tokensMySQL []testCase
-		tokens      []testCase
+		sqli        []testCaseSQLI
+		folding     []testCaseSQLI
+		tokensMySQL []testCaseSQLI
+		tokens      []testCaseSQLI
 	}{}
 
 	for _, fi := range dir {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
-		tc := testCase{
+		tc := testCaseSQLI{
 			name: fi.Name(),
 			data: data,
 		}

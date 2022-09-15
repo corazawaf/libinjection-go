@@ -3,6 +3,7 @@ package libinjection
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -78,10 +79,10 @@ func printHTML5Token(h *h5State) string {
 		h.tokenStart[:h.tokenLen])
 }
 
-func runXSSTest(filename, flag string) {
+func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
+	t.Helper()
 	var (
 		actual = ""
-		data   = readTestData(filename)
 	)
 
 	switch flag {
@@ -114,12 +115,54 @@ func TestXSSDriver(t *testing.T) {
 	}
 
 	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
 		if strings.Contains(fi.Name(), "-html5-") {
-			runXSSTest(baseDir+fi.Name(), html5)
+			runXSSTest(t, data, p, html5)
 		}
 	}
 
 	t.Log("False testing count: ", xssCount)
+}
+
+type testCaseXSS struct {
+	name string
+	data map[string]string
+}
+
+func BenchmarkXSSDriver(b *testing.B) {
+	baseDir := "./tests/"
+	dir, err := os.ReadDir(baseDir)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	cases := struct {
+		html5 []testCaseXSS
+	}{}
+
+	for _, fi := range dir {
+		p := filepath.Join(baseDir, fi.Name())
+		data := readTestData(p)
+		tc := testCaseXSS{
+			name: fi.Name(),
+			data: data,
+		}
+		switch {
+		case strings.Contains(fi.Name(), "-html5-"):
+			cases.html5 = append(cases.html5, tc)
+		}
+	}
+
+	b.Run("html5", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.html5 {
+				tt := tc
+				runXSSTest(b, tt.data, tt.name, html5)
+			}
+		}
+	})
 }
 
 func TestXSS(t *testing.T) {
