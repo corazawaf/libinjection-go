@@ -56,24 +56,24 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
-func htmlDecodeByteAt(s string, consumed *int) int {
+func htmlDecodeByteAt(s string, consumed int) (int, int) {
 	length := len(s)
 	val := 0
 
 	if length == 0 {
-		*consumed = 0
-		return byteEOF
+		consumed = 0
+		return byteEOF, consumed
 	}
 
-	*consumed = 1
+	consumed = 1
 	if s[0] != '&' || length < 2 {
-		return int(s[0])
+		return int(s[0]), consumed
 	}
 
 	if s[1] != '#' || len(s) < 3 {
 		// normally this would be for named entities
 		// but for this case we don't actually care
-		return '&'
+		return '&', consumed
 	}
 
 	if s[2] == 'x' || s[2] == 'X' {
@@ -84,7 +84,7 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 		ch = gsHexDecodeMap[ch]
 		if ch == 256 {
 			// degenerate case '&#[?]'
-			return '&'
+			return '&', consumed
 		}
 		val = ch
 		i := 4
@@ -92,48 +92,48 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
-				*consumed = i + 1
-				return val
+				consumed = i + 1
+				return val, consumed
 			}
 			ch = gsHexDecodeMap[ch]
 			if ch == 256 {
-				*consumed = i
-				return val
+				consumed = i
+				return val, consumed
 			}
 			val = val*16 + ch
 			if val > 0x1000FF {
-				return '&'
+				return '&', consumed
 			}
 			i++
 		}
-		*consumed = i
+		consumed = i
 	} else {
 		i := 2
 		ch := int(s[i])
 		if ch < '0' || ch > '9' {
-			return '&'
+			return '&', consumed
 		}
 		val = ch - '0'
 		i++
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
-				*consumed = i + 1
-				return val
+				consumed = i + 1
+				return val, consumed
 			}
 			if ch < '0' || ch > '9' {
-				*consumed = i
-				return val
+				consumed = i
+				return val, consumed
 			}
 			val = val*10 + (ch - '0')
 			if val > 0x1000FF {
-				return '&'
+				return '&', consumed
 			}
 			i++
 		}
-		*consumed = i
+		consumed = i
 	}
-	return val
+	return val, consumed
 }
 
 // Does an HTML encoded  binary string (const char*, length) start with
@@ -150,7 +150,8 @@ func htmlEncodeStartsWith(a, b string) bool {
 	)
 
 	for length > 0 {
-		cb := htmlDecodeByteAt(b[pos:], &consumed)
+		cb, consumedUpdated := htmlDecodeByteAt(b[pos:], consumed)
+		consumed = consumedUpdated
 		pos += consumed
 		length -= consumed
 
