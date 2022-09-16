@@ -73,12 +73,11 @@ func (h *h5State) stateBogusComment2() bool {
 // 12.2.4.49
 // 12.2.4.50
 // 12.2.4.51
-//
-//	state machine spec is confusing since it can only look
-//	at one character at a time but simply it's comments end by:
-//	1) EOF
-//	2) ending in -->
-//	3) ending in -!>
+//   state machine spec is confusing since it can only look
+//   at one character at a time but simply it's comments end by:
+//   1) EOF
+//   2) ending in -->
+//   3) ending in -!>
 func (h *h5State) stateComment() bool {
 	pos := h.pos
 
@@ -93,14 +92,14 @@ func (h *h5State) stateComment() bool {
 			h.tokenType = html5TypeTagComment
 			return true
 		}
-		offset := 1 // offset is set at the beginning of each iteration
-		posIndexOffset := pos + index + offset
+		offset := 1
+
 		// skip all nulls
-		for posIndexOffset < h.len && h.s[posIndexOffset] == 0x00 {
-			posIndexOffset++ //offset++
+		for pos+index+offset < h.len && h.s[pos+index+offset] == 0x00 {
+			offset++
 		}
 
-		if posIndexOffset == h.len {
+		if pos+index+offset == h.len {
 			h.state = h.stateEOF
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
@@ -108,15 +107,14 @@ func (h *h5State) stateComment() bool {
 			return true
 		}
 
-		ch := h.s[posIndexOffset]
+		ch := h.s[pos+index+offset]
 		if ch != byteDash && ch != byteBang {
 			pos = pos + index + 1
-			// pos updated, but the next iteration starts and posIndexOffset is calculated again
 			continue
 		}
-		posIndexOffset++ //offset++
+		offset++
 
-		if posIndexOffset == h.len {
+		if pos+index+offset == h.len {
 			h.state = h.stateEOF
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
@@ -124,17 +122,16 @@ func (h *h5State) stateComment() bool {
 			return true
 		}
 
-		if h.s[posIndexOffset] != byteGT {
+		if h.s[pos+index+offset] != byteGT {
 			pos = pos + index + 1
-			// pos updated, but the next iteration starts and posIndexOffset is calculated again
 			continue
 		}
-		posIndexOffset++ //offset++
+		offset++
 
 		// ends in --> or -!>
 		h.tokenStart = h.s[h.pos:]
 		h.tokenLen = index + pos - h.pos
-		h.pos = posIndexOffset
+		h.pos = pos + index + offset
 		h.state = h.stateData
 		h.tokenType = html5TypeTagComment
 		return true
