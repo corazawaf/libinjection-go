@@ -136,7 +136,7 @@ func runSQLiTest(t testing.TB, data map[string]string, filename string, flag str
 }
 
 func TestSQLiDriver(t *testing.T) {
-	baseDir := "./tests/"
+	baseDir := "tests"
 	dir, err := os.ReadDir(baseDir)
 	if err != nil {
 		t.Fatal(err)

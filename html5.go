@@ -73,11 +73,12 @@ func (h *h5State) stateBogusComment2() bool {
 // 12.2.4.49
 // 12.2.4.50
 // 12.2.4.51
-//   state machine spec is confusing since it can only look
-//   at one character at a time but simply it's comments end by:
-//   1) EOF
-//   2) ending in -->
-//   3) ending in -!>
+//
+//	state machine spec is confusing since it can only look
+//	at one character at a time but simply it's comments end by:
+//	1) EOF
+//	2) ending in -->
+//	3) ending in -!>
 func (h *h5State) stateComment() bool {
 	pos := h.pos
 
