@@ -20,11 +20,13 @@ func isBlackTag(s string) bool {
 		}
 	}
 
-	// anything SVG related or XSL(t) related
-	if upperS == "SVG" || upperS == "XSL" {
+	switch upperS {
+	// anything SVG or XSL(t) related
+	case "SVT", "XSL":
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isBlackAttr(s string) int {
@@ -56,24 +58,22 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
-func htmlDecodeByteAt(s string, consumed int) (int, int) {
+func htmlDecodeByteAt(s string) (int, int) {
 	length := len(s)
 	val := 0
 
 	if length == 0 {
-		consumed = 0
-		return byteEOF, consumed
+		return byteEOF, 0
 	}
 
-	consumed = 1
 	if s[0] != '&' || length < 2 {
-		return int(s[0]), consumed
+		return int(s[0]), 1
 	}
 
 	if s[1] != '#' || len(s) < 3 {
 		// normally this would be for named entities
 		// but for this case we don't actually care
-		return '&', consumed
+		return '&', 1
 	}
 
 	if s[2] == 'x' || s[2] == 'X' {
@@ -84,7 +84,7 @@ func htmlDecodeByteAt(s string, consumed int) (int, int) {
 		ch = gsHexDecodeMap[ch]
 		if ch == 256 {
 			// degenerate case '&#[?]'
-			return '&', consumed
+			return '&', 1
 		}
 		val = ch
 		i := 4
@@ -92,48 +92,43 @@ func htmlDecodeByteAt(s string, consumed int) (int, int) {
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
-				consumed = i + 1
-				return val, consumed
+				return val, i + 1
 			}
 			ch = gsHexDecodeMap[ch]
 			if ch == 256 {
-				consumed = i
-				return val, consumed
+				return val, i
 			}
 			val = val*16 + ch
 			if val > 0x1000FF {
-				return '&', consumed
+				return '&', 1
 			}
 			i++
 		}
-		consumed = i
+		return val, i
 	} else {
 		i := 2
 		ch := int(s[i])
 		if ch < '0' || ch > '9' {
-			return '&', consumed
+			return '&', 1
 		}
 		val = ch - '0'
 		i++
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
-				consumed = i + 1
-				return val, consumed
+				return val, i + 1
 			}
 			if ch < '0' || ch > '9' {
-				consumed = i
-				return val, consumed
+				return val, i
 			}
 			val = val*10 + (ch - '0')
 			if val > 0x1000FF {
-				return '&', consumed
+				return '&', 1
 			}
 			i++
 		}
-		consumed = i
+		return val, i
 	}
-	return val, consumed
 }
 
 // Does an HTML encoded  binary string (const char*, length) start with
@@ -142,16 +137,14 @@ func htmlDecodeByteAt(s string, consumed int) (int, int) {
 // also ignore any embedded nulls in the HTML string!
 func htmlEncodeStartsWith(a, b string) bool {
 	var (
-		consumed = 0
-		first    = true
-		bs       []byte
-		pos      = 0
-		length   = len(b)
+		first  = true
+		bs     []byte
+		pos    = 0
+		length = len(b)
 	)
 
 	for length > 0 {
-		cb, consumedUpdated := htmlDecodeByteAt(b[pos:], consumed)
-		consumed = consumedUpdated
+		cb, consumed := htmlDecodeByteAt(b[pos:])
 		pos += consumed
 		length -= consumed
 

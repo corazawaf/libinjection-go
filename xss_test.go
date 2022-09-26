@@ -43,8 +43,6 @@ const (
 	xss   = "xss"
 )
 
-var xssCount = 0
-
 func h5TypeToString(h5Type int) string {
 	switch h5Type {
 	case html5TypeDataText:
@@ -99,11 +97,8 @@ func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 
 	actual = strings.TrimSpace(actual)
 	if actual != data["--EXPECTED--"] {
-		xssCount++
-		fmt.Println("FILE: (" + filename + ")")
-		fmt.Println("INPUT: (" + data["--INPUT--"] + ")")
-		fmt.Println("EXPECTED: (" + data["--EXPECTED--"] + ")")
-		fmt.Println("GOT: (" + actual + ")")
+		t.Errorf("FILE: (%s)\nINPUT: (%s)\nEXPECTED: (%s)\nGOT: (%s)\n",
+			filename, data["--INPUT--"], data["--EXPECTED--"], actual)
 	}
 }
 
@@ -121,8 +116,6 @@ func TestXSSDriver(t *testing.T) {
 			runXSSTest(t, data, p, html5)
 		}
 	}
-
-	t.Log("False testing count: ", xssCount)
 }
 
 type testCaseXSS struct {
