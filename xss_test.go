@@ -113,7 +113,7 @@ func TestXSSDriver(t *testing.T) {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
 		if strings.Contains(fi.Name(), "-html5-") {
-			t.Run("XSS Driver - html5", func(t *testing.T) {
+			t.Run(fi.Name(), func(t *testing.T) {
 				runXSSTest(t, data, p, html5)
 			})
 		}
