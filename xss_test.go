@@ -113,7 +113,9 @@ func TestXSSDriver(t *testing.T) {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
 		if strings.Contains(fi.Name(), "-html5-") {
-			runXSSTest(t, data, p, html5)
+			t.Run("XSS Driver - html5", func(t *testing.T) {
+				runXSSTest(t, data, p, html5)
+			})
 		}
 	}
 }
@@ -144,6 +146,7 @@ func BenchmarkXSSDriver(b *testing.B) {
 		switch {
 		case strings.Contains(fi.Name(), "-html5-"):
 			cases.html5 = append(cases.html5, tc)
+		default:
 		}
 	}
 

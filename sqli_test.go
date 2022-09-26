@@ -147,13 +147,21 @@ func TestSQLiDriver(t *testing.T) {
 		data := readTestData(p)
 		switch {
 		case strings.Contains(fi.Name(), "-sqli-"):
-			runSQLiTest(t, data, p, fingerprints, 0)
+			t.Run("SQLi Driver - sqli", func(t *testing.T) {
+				runSQLiTest(t, data, p, fingerprints, 0)
+			})
 		case strings.Contains(fi.Name(), "-folding-"):
-			runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			t.Run("SQLi Driver - folding", func(t *testing.T) {
+				runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			})
 		case strings.Contains(fi.Name(), "-tokens_mysql-"):
-			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			t.Run("SQLi Driver - tokens_mysql", func(t *testing.T) {
+				runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			})
 		case strings.Contains(fi.Name(), "-tokens-"):
-			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			t.Run("SQLi Driver - tokens", func(t *testing.T) {
+				runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			})
 		}
 	}
 }

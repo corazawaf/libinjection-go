@@ -105,30 +105,29 @@ func htmlDecodeByteAt(s string) (int, int) {
 			i++
 		}
 		return val, i
-	} else {
-		i := 2
-		ch := int(s[i])
+	}
+	i := 2
+	ch := int(s[i])
+	if ch < '0' || ch > '9' {
+		return '&', 1
+	}
+	val = ch - '0'
+	i++
+	for i < length {
+		ch = int(s[i])
+		if ch == ';' {
+			return val, i + 1
+		}
 		if ch < '0' || ch > '9' {
+			return val, i
+		}
+		val = val*10 + (ch - '0')
+		if val > 0x1000FF {
 			return '&', 1
 		}
-		val = ch - '0'
 		i++
-		for i < length {
-			ch = int(s[i])
-			if ch == ';' {
-				return val, i + 1
-			}
-			if ch < '0' || ch > '9' {
-				return val, i
-			}
-			val = val*10 + (ch - '0')
-			if val > 0x1000FF {
-				return '&', 1
-			}
-			i++
-		}
-		return val, i
 	}
+	return val, i
 }
 
 // Does an HTML encoded  binary string (const char*, length) start with
