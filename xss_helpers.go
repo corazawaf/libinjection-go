@@ -75,7 +75,7 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 		return int(s[0])
 	}
 
-	if s[1] != '#' {
+	if s[1] != '#' || len(s) < 3 {
 		// normally this would be for named entities
 		// but for this case we don't actually care
 		return '&'

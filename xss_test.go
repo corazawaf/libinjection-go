@@ -121,3 +121,24 @@ func TestXSSDriver(t *testing.T) {
 
 	t.Log("False testing count: ", xssCount)
 }
+
+func TestXSS(t *testing.T) {
+	tests := []struct {
+		input string
+		isXSS bool
+	}{
+		{
+			input: "href=&#",
+			isXSS: false,
+		},
+	}
+
+	for _, tc := range tests {
+		tt := tc
+		t.Run(tt.input, func(t *testing.T) {
+			if want, have := tt.isXSS, IsXSS(tt.input); want != have {
+				t.Errorf("want %v, have %v", want, have)
+			}
+		})
+	}
+}
