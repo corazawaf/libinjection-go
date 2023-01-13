@@ -131,6 +131,10 @@ func TestXSS(t *testing.T) {
 			input: "href=&#",
 			isXSS: false,
 		},
+		{
+			input: "href=&#X",
+			isXSS: false,
+		},
 	}
 
 	for _, tc := range tests {
