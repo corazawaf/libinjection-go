@@ -75,13 +75,16 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 		return int(s[0])
 	}
 
-	if s[1] != '#' {
+	if s[1] != '#' || len(s) < 3 {
 		// normally this would be for named entities
 		// but for this case we don't actually care
 		return '&'
 	}
 
 	if s[2] == 'x' || s[2] == 'X' {
+		if len(s) < 4 {
+			return '&'
+		}
 		ch := int(s[3])
 		ch = gsHexDecodeMap[ch]
 		if ch == 256 {
