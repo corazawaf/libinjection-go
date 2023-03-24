@@ -203,6 +203,7 @@ func (h *h5State) stateMarkupDeclarationOpen() bool {
 }
 
 func (h *h5State) stateSelfClosingStartTag() bool {
+	// WARNING: This function is partially inlined into stateBeforeAttributeName()
 	if h.pos >= h.len {
 		return false
 	}
@@ -494,6 +495,7 @@ func (h *h5State) stateAttributeName() bool {
 }
 
 func (h *h5State) stateBeforeAttributeName() bool {
+tail_call:
 	ch := h.skipWhite()
 	switch ch {
 	case byteEOF:
@@ -501,6 +503,13 @@ func (h *h5State) stateBeforeAttributeName() bool {
 
 	case byteSlash:
 		h.pos++
+		// Logically, we want to call stateSelfClosingStartTag() here
+		// But this function might call us back and result in deep recursion.
+		// We inline part of stateSelfClosingStartTag() here and do manual tail call optimization.
+		if h.pos < h.len && h.s[h.pos] != byteGT {
+			goto tail_call
+		}
+
 		return h.stateSelfClosingStartTag()
 
 	case byteGT:
