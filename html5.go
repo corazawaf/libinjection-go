@@ -73,11 +73,12 @@ func (h *h5State) stateBogusComment2() bool {
 // 12.2.4.49
 // 12.2.4.50
 // 12.2.4.51
-//   state machine spec is confusing since it can only look
-//   at one character at a time but simply it's comments end by:
-//   1) EOF
-//   2) ending in -->
-//   3) ending in -!>
+//
+//	state machine spec is confusing since it can only look
+//	at one character at a time but simply it's comments end by:
+//	1) EOF
+//	2) ending in -->
+//	3) ending in -!>
 func (h *h5State) stateComment() bool {
 	pos := h.pos
 
@@ -495,34 +496,35 @@ func (h *h5State) stateAttributeName() bool {
 }
 
 func (h *h5State) stateBeforeAttributeName() bool {
-tail_call:
-	ch := h.skipWhite()
-	switch ch {
-	case byteEOF:
-		return false
+	for h.pos < h.len {
+		ch := h.skipWhite()
+		switch ch {
+		case byteEOF:
+			return false
 
-	case byteSlash:
-		h.pos++
-		// Logically, we want to call stateSelfClosingStartTag() here
-		// But this function might call us back and result in deep recursion.
-		// We inline part of stateSelfClosingStartTag() here and do manual tail call optimization.
-		if h.pos < h.len && h.s[h.pos] != byteGT {
-			goto tail_call
+		case byteSlash:
+			h.pos++
+			// Logically, we want to call stateSelfClosingStartTag() here
+			// But this function might call us back and result in deep recursion, so
+			// we iterate within this function instead.
+			if h.pos < h.len && h.s[h.pos] != byteGT {
+				continue
+			}
+			return h.stateSelfClosingStartTag()
+
+		case byteGT:
+			h.state = h.stateData
+			h.tokenStart = h.s[h.pos:]
+			h.tokenLen = 1
+			h.tokenType = html5TypeTagNameClose
+			h.pos++
+			return true
+
+		default:
+			return h.stateAttributeName()
 		}
-
-		return h.stateSelfClosingStartTag()
-
-	case byteGT:
-		h.state = h.stateData
-		h.tokenStart = h.s[h.pos:]
-		h.tokenLen = 1
-		h.tokenType = html5TypeTagNameClose
-		h.pos++
-		return true
-
-	default:
-		return h.stateAttributeName()
 	}
+	return false
 }
 
 // 12.2.4.41
