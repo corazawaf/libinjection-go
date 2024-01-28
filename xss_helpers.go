@@ -78,7 +78,7 @@ func htmlDecodeByteAt(s string) (int, int) {
 
 	if s[2] == 'x' || s[2] == 'X' {
 		if len(s) < 4 {
-			return '&'
+			return '&', 1
 		}
 		ch := int(s[3])
 		ch = gsHexDecodeMap[ch]
