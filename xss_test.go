@@ -29,6 +29,8 @@ func TestIsXSS(t *testing.T) {
 		"<a href  =   javascript:alert(1); >",
 		"<a href=\"  javascript:alert(1);\" >",
 		"<a href=\"JAVASCRIPT:alert(1);\" >",
+		// Payload sample from https://github.com/payloadbox/xss-payload-list
+		"<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>",
 	}
 
 	for _, example := range examples {
