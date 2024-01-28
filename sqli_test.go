@@ -147,18 +147,26 @@ func TestSQLiDriver(t *testing.T) {
 		data := readTestData(p)
 		switch {
 		case strings.Contains(fi.Name(), "-sqli-"):
-			runSQLiTest(t, data, p, fingerprints, 0)
+			t.Run(fi.Name(), func(t *testing.T) {
+				runSQLiTest(t, data, p, fingerprints, 0)
+			})
 		case strings.Contains(fi.Name(), "-folding-"):
-			runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			t.Run(fi.Name(), func(t *testing.T) {
+				runSQLiTest(t, data, p, folding, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			})
 		case strings.Contains(fi.Name(), "-tokens_mysql-"):
-			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			t.Run(fi.Name(), func(t *testing.T) {
+				runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLMysql)
+			})
 		case strings.Contains(fi.Name(), "-tokens-"):
-			runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			t.Run(fi.Name(), func(t *testing.T) {
+				runSQLiTest(t, data, p, tokens, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+			})
 		}
 	}
 }
 
-type testCase struct {
+type testCaseSQLI struct {
 	name string
 	data map[string]string
 }
@@ -171,16 +179,16 @@ func BenchmarkSQLiDriver(b *testing.B) {
 	}
 
 	cases := struct {
-		sqli        []testCase
-		folding     []testCase
-		tokensMySQL []testCase
-		tokens      []testCase
+		sqli        []testCaseSQLI
+		folding     []testCaseSQLI
+		tokensMySQL []testCaseSQLI
+		tokens      []testCaseSQLI
 	}{}
 
 	for _, fi := range dir {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
-		tc := testCase{
+		tc := testCaseSQLI{
 			name: fi.Name(),
 			data: data,
 		}
