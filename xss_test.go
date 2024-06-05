@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// Examples can be read at https://portswigger.net/web-security/cross-site-scripting/cheat-sheet
 func TestIsXSS(t *testing.T) {
 	examples := []string{
 		"<script>alert(1);</script>",
@@ -28,6 +29,11 @@ func TestIsXSS(t *testing.T) {
 		"<a href  =   javascript:alert(1); >",
 		"<a href=\"  javascript:alert(1);\" >",
 		"<a href=\"JAVASCRIPT:alert(1);\" >",
+		"<style>@keyframes x{}</style><xss style=\"animation-name:x\" onanimationstart=\"alert(1)\"></xss>",
+		"<noembed><img title=\"</noembed><img src onerror=alert(1)>\"></noembed>",
+		"javascript:/*--></title></style></textarea></script></xmp><svg/onload='+/\"/+/onmouseover=1/+/[*/[]/+alert(1)//'>", // polyglot payload
+		"<xss class=progress-bar-animated onanimationstart=alert(1)>",
+		"<button popovertarget=x>Click me</button><xss ontoggle=alert(1) popover id=x>XSS</xss>",
 	}
 
 	for _, example := range examples {
