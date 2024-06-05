@@ -204,6 +204,7 @@ func (h *h5State) stateMarkupDeclarationOpen() bool {
 }
 
 func (h *h5State) stateSelfClosingStartTag() bool {
+	// WARNING: This function is partially inlined into stateBeforeAttributeName()
 	if h.pos >= h.len {
 		return false
 	}
@@ -495,26 +496,35 @@ func (h *h5State) stateAttributeName() bool {
 }
 
 func (h *h5State) stateBeforeAttributeName() bool {
-	ch := h.skipWhite()
-	switch ch {
-	case byteEOF:
-		return false
+	for h.pos < h.len {
+		ch := h.skipWhite()
+		switch ch {
+		case byteEOF:
+			return false
 
-	case byteSlash:
-		h.pos++
-		return h.stateSelfClosingStartTag()
+		case byteSlash:
+			h.pos++
+			// Logically, we want to call stateSelfClosingStartTag() here
+			// But this function might call us back and result in deep recursion, so
+			// we iterate within this function instead.
+			if h.pos < h.len && h.s[h.pos] != byteGT {
+				continue
+			}
+			return h.stateSelfClosingStartTag()
 
-	case byteGT:
-		h.state = h.stateData
-		h.tokenStart = h.s[h.pos:]
-		h.tokenLen = 1
-		h.tokenType = html5TypeTagNameClose
-		h.pos++
-		return true
+		case byteGT:
+			h.state = h.stateData
+			h.tokenStart = h.s[h.pos:]
+			h.tokenLen = 1
+			h.tokenType = html5TypeTagNameClose
+			h.pos++
+			return true
 
-	default:
-		return h.stateAttributeName()
+		default:
+			return h.stateAttributeName()
+		}
 	}
+	return false
 }
 
 // 12.2.4.41
