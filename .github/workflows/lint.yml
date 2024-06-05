@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: v1.20.x
     - name: Install dependencies
@@ -24,8 +24,8 @@ jobs:
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
         go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
         go install golang.org/x/lint/golint@latest
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-    - uses: pre-commit/action@v2.0.3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+    - uses: pre-commit/action@v3.0.1
       with: 
         extra_args: --all-files
