@@ -1,0 +1,42 @@
+--TEST--
+Extended Body Test
+--INPUT--
+<BODY BACKGROUND="javascript:alert('XSS')"><h1>Welcome to my awesome Website!</h1><p>This is a paragraph of text on my website. It contains more characters to make the test longer.</p><div id="content"><p>Here's another paragraph of text. This one is inside a div with an id of "content".</p><ul><li>List item 1</li><li>List item 2</li><li>List item 3</li></ul></div></BODY>
+--EXPECTED--
+TAG_NAME_OPEN,4,BODY
+ATTR_NAME,10,BACKGROUND
+ATTR_VALUE,23,javascript:alert('XSS')
+TAG_NAME_CLOSE,1,>
+TAG_NAME_OPEN,2,h1
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,30,Welcome to my awesome Website!
+TAG_CLOSE,2,h1
+TAG_NAME_OPEN,1,p
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,95,This is a paragraph of text on my website. It contains more characters to make the test longer.
+TAG_CLOSE,1,p
+TAG_NAME_OPEN,3,div
+ATTR_NAME,2,id
+ATTR_VALUE,7,content
+TAG_NAME_CLOSE,1,>
+TAG_NAME_OPEN,1,p
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,83,Here's another paragraph of text. This one is inside a div with an id of "content".
+TAG_CLOSE,1,p
+TAG_NAME_OPEN,2,ul
+TAG_NAME_CLOSE,1,>
+TAG_NAME_OPEN,2,li
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,11,List item 1
+TAG_CLOSE,2,li
+TAG_NAME_OPEN,2,li
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,11,List item 2
+TAG_CLOSE,2,li
+TAG_NAME_OPEN,2,li
+TAG_NAME_CLOSE,1,>
+DATA_TEXT,11,List item 3
+TAG_CLOSE,2,li
+TAG_CLOSE,2,ul
+TAG_CLOSE,3,div
+TAG_CLOSE,4,BODY
