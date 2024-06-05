@@ -69,13 +69,11 @@ func isXSS(input string, flags int) bool {
 			}
 
 			if h5.tokenLen > 5 {
-				// IE <?import pseudo-tag
-				if strings.ToUpper(strings.ReplaceAll(h5.tokenStart[:6], "\x00", "")) == "IMPORT" {
-					return true
-				}
+				upperTokenStart := strings.ToUpper(strings.ReplaceAll(h5.tokenStart[:6], "\x00", ""))
 
-				// XML Entity definition
-				if strings.ToUpper(strings.ReplaceAll(h5.tokenStart[:6], "\x00", "")) == "ENTITY" {
+				// IE <?import pseudo-tag or XML Entity definition
+				if upperTokenStart == "IMPORT" ||
+					upperTokenStart == "ENTITY" {
 					return true
 				}
 			}

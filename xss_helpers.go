@@ -13,23 +13,20 @@ func isBlackTag(s string) bool {
 		return false
 	}
 
+	upperS := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	for i := 0; i < len(blackTags); i++ {
-		if strings.ToUpper(strings.ReplaceAll(s, "\x00", "")) == blackTags[i] {
+		if upperS == blackTags[i] {
 			return true
 		}
 	}
 
-	// anything SVG related
-	if strings.ToUpper(s) == "SVG" {
+	switch upperS {
+	// anything SVG or XSL(t) related
+	case "SVT", "XSL":
 		return true
+	default:
+		return false
 	}
-
-	// anything XSL(t) related
-	if strings.ToUpper(s) == "XSL" {
-		return true
-	}
-
-	return false
 }
 
 func isBlackAttr(s string) int {
@@ -65,35 +62,33 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
-func htmlDecodeByteAt(s string, consumed *int) int {
+func htmlDecodeByteAt(s string) (int, int) {
 	length := len(s)
 	val := 0
 
 	if length == 0 {
-		*consumed = 0
-		return byteEOF
+		return byteEOF, 0
 	}
 
-	*consumed = 1
 	if s[0] != '&' || length < 2 {
-		return int(s[0])
+		return int(s[0]), 1
 	}
 
 	if s[1] != '#' || len(s) < 3 {
 		// normally this would be for named entities
 		// but for this case we don't actually care
-		return '&'
+		return '&', 1
 	}
 
 	if s[2] == 'x' || s[2] == 'X' {
 		if len(s) < 4 {
-			return '&'
+			return '&', 1
 		}
 		ch := int(s[3])
 		ch = gsHexDecodeMap[ch]
 		if ch == 256 {
 			// degenerate case '&#[?]'
-			return '&'
+			return '&', 1
 		}
 		val = ch
 		i := 4
@@ -101,48 +96,42 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 		for i < length {
 			ch = int(s[i])
 			if ch == ';' {
-				*consumed = i + 1
-				return val
+				return val, i + 1
 			}
 			ch = gsHexDecodeMap[ch]
 			if ch == 256 {
-				*consumed = i
-				return val
+				return val, i
 			}
 			val = val*16 + ch
 			if val > 0x1000FF {
-				return '&'
+				return '&', 1
 			}
 			i++
 		}
-		*consumed = i
-	} else {
-		i := 2
-		ch := int(s[i])
-		if ch < '0' || ch > '9' {
-			return '&'
-		}
-		val = ch - '0'
-		i++
-		for i < length {
-			ch = int(s[i])
-			if ch == ';' {
-				*consumed = i + 1
-				return val
-			}
-			if ch < '0' || ch > '9' {
-				*consumed = i
-				return val
-			}
-			val = val*10 + (ch - '0')
-			if val > 0x1000FF {
-				return '&'
-			}
-			i++
-		}
-		*consumed = i
+		return val, i
 	}
-	return val
+	i := 2
+	ch := int(s[i])
+	if ch < '0' || ch > '9' {
+		return '&', 1
+	}
+	val = ch - '0'
+	i++
+	for i < length {
+		ch = int(s[i])
+		if ch == ';' {
+			return val, i + 1
+		}
+		if ch < '0' || ch > '9' {
+			return val, i
+		}
+		val = val*10 + (ch - '0')
+		if val > 0x1000FF {
+			return '&', 1
+		}
+		i++
+	}
+	return val, i
 }
 
 // Does an HTML encoded  binary string (const char*, length) start with
@@ -151,15 +140,14 @@ func htmlDecodeByteAt(s string, consumed *int) int {
 // also ignore any embedded nulls in the HTML string!
 func htmlEncodeStartsWith(a, b string) bool {
 	var (
-		consumed = 0
-		first    = true
-		bs       []byte
-		pos      = 0
-		length   = len(b)
+		first  = true
+		bs     []byte
+		pos    = 0
+		length = len(b)
 	)
 
 	for length > 0 {
-		cb := htmlDecodeByteAt(b[pos:], &consumed)
+		cb, consumed := htmlDecodeByteAt(b[pos:])
 		pos += consumed
 		length -= consumed
 
