@@ -35,22 +35,26 @@ func isBlackAttr(s string) int {
 		return attributeTypeNone
 	}
 
-	upperS := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	if length >= 5 {
-		// javascript on.*
-		if strings.ToUpper(s[:2]) == "ON" {
-			// got javascript on- attribute name
-			return attributeTypeBlack
-		}
-
-		if upperS == "XMLNS" || upperS == "XLINK" {
+		if sUpperWithoutNulls == "XMLNS" || sUpperWithoutNulls == "XLINK" {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
+		}
+		// JavaScript on.* event handlers
+		if sUpperWithoutNulls[:2] == "ON" {
+			eventName := sUpperWithoutNulls[2:]
+			// got javascript on- attribute name
+			for _, event := range blackEvents {
+				if eventName == event.name {
+					return event.attributeType
+				}
+			}
 		}
 	}
 
 	for _, black := range blacks {
-		if upperS == black.name {
+		if sUpperWithoutNulls == black.name {
 			// got banner attribute name
 			return black.attributeType
 		}

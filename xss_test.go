@@ -8,34 +8,47 @@ import (
 	"testing"
 )
 
+// Examples can be read at https://portswigger.net/web-security/cross-site-scripting/cheat-sheet
 func TestIsXSS(t *testing.T) {
-	examples := []string{
-		"<script>alert(1);</script>",
-		"><script>alert(1);</script>",
-		"x ><script>alert(1);</script>",
-		"' ><script>alert(1);</script>",
-		"\"><script>alert(1);</script>",
-		"red;</style><script>alert(1);</script>",
-		"red;}</style><script>alert(1);</script>",
-		"red;\"/><script>alert(1);</script>",
-		"');}</style><script>alert(1);</script>",
-		"onerror=alert(1)>",
-		"x onerror=alert(1);>",
-		"x' onerror=alert(1);>",
-		"x\" onerror=alert(1);>",
-		"<a href=\"javascript:alert(1)\">",
-		"<a href='javascript:alert(1)'>",
-		"<a href=javascript:alert(1)>",
-		"<a href  =   javascript:alert(1); >",
-		"<a href=\"  javascript:alert(1);\" >",
-		"<a href=\"JAVASCRIPT:alert(1);\" >",
+	examples := []struct {
+		input string
+		isXSS bool
+	}{
+		// True positives
+		{input: "<script>alert(1);</script>", isXSS: true},
+		{input: "><script>alert(1);</script>", isXSS: true},
+		{input: "x ><script>alert(1);</script>", isXSS: true},
+		{input: "' ><script>alert(1);</script>", isXSS: true},
+		{input: "\"><script>alert(1);</script>", isXSS: true},
+		{input: "red;</style><script>alert(1);</script>", isXSS: true},
+		{input: "red;}</style><script>alert(1);</script>", isXSS: true},
+		{input: "red;\"/><script>alert(1);</script>", isXSS: true},
+		{input: "');}</style><script>alert(1);</script>", isXSS: true},
+		{input: "onerror=alert(1)>", isXSS: true},
+		{input: "x onerror=alert(1);>", isXSS: true},
+		{input: "x' onerror=alert(1);>", isXSS: true},
+		{input: "x\" onerror=alert(1);>", isXSS: true},
+		{input: "<a href=\"javascript:alert(1)\">", isXSS: true},
+		{input: "<a href='javascript:alert(1)'>", isXSS: true},
+		{input: "<a href=javascript:alert(1)>", isXSS: true},
+		{input: "<a href  =   javascript:alert(1); >", isXSS: true},
+		{input: "<a href=\"  javascript:alert(1);\" >", isXSS: true},
+		{input: "<a href=\"JAVASCRIPT:alert(1);\" >", isXSS: true},
+		{input: "<style>@keyframes x{}</style><xss style=\"animation-name:x\" onanimationstart=\"alert(1)\"></xss>", isXSS: true},
+		{input: "<noembed><img title=\"</noembed><img src onerror=alert(1)>\"></noembed>", isXSS: true},
+		{input: "javascript:/*--></title></style></textarea></script></xmp><svg/onload='+/\"/+/onmouseover=1/+/[*/[]/+alert(1)//'>", isXSS: true}, // polyglot payload
+		{input: "<xss class=progress-bar-animated onanimationstart=alert(1)>", isXSS: true},
+		{input: "<button popovertarget=x>Click me</button><xss ontoggle=alert(1) popover id=x>XSS</xss>", isXSS: true},
 		// Payload sample from https://github.com/payloadbox/xss-payload-list
-		"<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>",
+		{input: "<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>", isXSS: true},
+		// True negatives
+		{input: "myvar=onfoobar==", isXSS: false},
+		{input: "onY29va2llcw==", isXSS: false}, // base64 encoded "thisisacookie", prefixed by "on"
 	}
 
 	for _, example := range examples {
-		if !IsXSS(example) {
-			t.Errorf("[%s] is not XSS", example)
+		if res := IsXSS(example.input); res != example.isXSS {
+			t.Errorf("[%s] wanted: %t, got %t", example.input, example.isXSS, res)
 		}
 	}
 }
