@@ -13,14 +13,14 @@ func isBlackTag(s string) bool {
 		return false
 	}
 
-	upperS := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	for i := 0; i < len(blackTags); i++ {
-		if upperS == blackTags[i] {
+		if sUpperWithoutNulls == blackTags[i] {
 			return true
 		}
 	}
 
-	switch upperS {
+	switch sUpperWithoutNulls {
 	// anything SVG or XSL(t) related
 	case "SVT", "XSL":
 		return true
@@ -30,12 +30,12 @@ func isBlackTag(s string) bool {
 }
 
 func isBlackAttr(s string) int {
-	length := len(s)
+	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+
+	length := len(sUpperWithoutNulls)
 	if length < 2 {
 		return attributeTypeNone
 	}
-
-	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
 	if length >= 5 {
 		if sUpperWithoutNulls == "XMLNS" || sUpperWithoutNulls == "XLINK" {
 			// got xmlns or xlink tags
