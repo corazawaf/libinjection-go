@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install Go
-      uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
       with:
         go-version: 1.24.x
     - name: Install dependencies
@@ -25,7 +25,7 @@ jobs:
         go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
         go install golang.org/x/lint/golint@latest
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-    - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
+    - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
     - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
       with: 
         extra_args: --all-files
