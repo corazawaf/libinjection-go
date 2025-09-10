@@ -17,7 +17,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
       with:
-        go-version: 1.24.x
+        go-version: 1.25.x
     - name: Install dependencies
       run: |
         cd /tmp && go install github.com/go-critic/go-critic/cmd/gocritic@latest
