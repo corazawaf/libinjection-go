@@ -32,7 +32,7 @@ var blackEvents = []stringType{
 	{"AUDIOEND", attributeTypeBlack},
 	{"AUDIOPROCESS", attributeTypeBlack},
 	{"AUDIOSTART", attributeTypeBlack},
-	{"AUXCLICK", attributeTypeBlack},
+	{"AUXCLICK", attributeTypeBlack}, // HTML5 Pointer Events - https://w3c.github.io/pointerevents/
 	{"AUTOCOMPLETE", attributeTypeBlack},
 	{"AUTOCOMPLETEERROR", attributeTypeBlack},
 	{"BACKGROUNDFETCHABORT", attributeTypeBlack},
@@ -43,10 +43,12 @@ var blackEvents = []stringType{
 	{"BEFORECUT", attributeTypeBlack},
 	{"BEFOREINPUT", attributeTypeBlack},
 	{"BEFORELOAD", attributeTypeBlack},
+	{"BEFOREMATCH", attributeTypeBlack},  // HTML hidden=until-found - https://developer.mozilla.org/en-US/docs/Web/API/Element/beforematch_event
 	{"BEFOREPASTE", attributeTypeBlack},
 	{"BEFOREPRINT", attributeTypeBlack},
 	{"BEFORETOGGLE", attributeTypeBlack},
 	{"BEFOREUNLOAD", attributeTypeBlack},
+	{"BEGIN", attributeTypeBlack},  // SVG Animation
 	{"BEGINEVENT", attributeTypeBlack},
 	{"BLOCKED", attributeTypeBlack},
 	{"BLUR", attributeTypeBlack},
@@ -64,6 +66,7 @@ var blackEvents = []stringType{
 	{"CLICK", attributeTypeBlack},
 	{"CLOSE", attributeTypeBlack},
 	{"CLOSING", attributeTypeBlack},
+	{"COMMAND", attributeTypeBlack},  // HTML command event
 	{"COMPLETE", attributeTypeBlack},
 	{"COMPOSITIONEND", attributeTypeBlack},
 	{"COMPOSITIONSTART", attributeTypeBlack},
@@ -196,8 +199,8 @@ var blackEvents = []stringType{
 	{"OVERFLOWCHANGED", attributeTypeBlack},
 	{"PAGEHIDE", attributeTypeBlack},
 	{"PAGESHOW", attributeTypeBlack},
-	{"PAGEREVEAL", attributeTypeBlack},  // View Transitions API (experimental)
-	{"PAGESWAP", attributeTypeBlack},    // View Transitions API (experimental)
+	{"PAGEREVEAL", attributeTypeBlack},  // View Transitions API - https://developer.mozilla.org/en-US/docs/Web/API/Window/pagereveal_event
+	{"PAGESWAP", attributeTypeBlack},    // View Transitions API - https://developer.mozilla.org/en-US/docs/Web/API/Window/pageswap_event
 	{"PASTE", attributeTypeBlack},
 	{"PAUSE", attributeTypeBlack},
 	{"PAYERDETAILCHANGE", attributeTypeBlack},
@@ -226,12 +229,15 @@ var blackEvents = []stringType{
 	{"QUALITYCHANGE", attributeTypeBlack},
 	{"RATECHANGE", attributeTypeBlack},
 	{"READYSTATECHANGE", attributeTypeBlack},
+	{"REDRAW", attributeTypeBlack},  // SVG redraw event
 	{"REJECTIONHANDLED", attributeTypeBlack},
 	{"RELEASE", attributeTypeBlack},
 	{"REMOVE", attributeTypeBlack},
 	{"REMOVESOURCEBUFFER", attributeTypeBlack},
 	{"REMOVESTREAM", attributeTypeBlack},
 	{"REMOVETRACK", attributeTypeBlack},
+	{"REPEAT", attributeTypeBlack},       // SVG animation repeat event
+	{"REPEATEVENT", attributeTypeBlack},  // SVG animation repeat event
 	{"RESET", attributeTypeBlack},
 	{"RESIZE", attributeTypeBlack},
 	{"RESOURCETIMINGBUFFERFULL", attributeTypeBlack},
@@ -239,8 +245,9 @@ var blackEvents = []stringType{
 	{"RESUME", attributeTypeBlack},
 	{"RTCTRANSFORM", attributeTypeBlack},
 	{"SCROLL", attributeTypeBlack},
-	{"SCROLLSNAPCHANGE", attributeTypeBlack},    // CSS Scroll Snap (experimental)
-	{"SCROLLSNAPCHANGING", attributeTypeBlack},  // CSS Scroll Snap (experimental)
+	{"SCROLLEND", attributeTypeBlack},           // CSS Scroll - https://developer.mozilla.org/en-US/docs/Web/API/Document/scrollend_event
+	{"SCROLLSNAPCHANGE", attributeTypeBlack},    // CSS Scroll Snap - https://developer.chrome.com/blog/scroll-snap-events
+	{"SCROLLSNAPCHANGING", attributeTypeBlack},  // CSS Scroll Snap - https://developer.chrome.com/blog/scroll-snap-events
 	{"SEARCH", attributeTypeBlack},
 	{"SECURITYPOLICYVIOLATION", attributeTypeBlack},
 	{"SEEKED", attributeTypeBlack},
@@ -315,6 +322,8 @@ var blackEvents = []stringType{
 	{"WEBKITANIMATIONEND", attributeTypeBlack},
 	{"WEBKITANIMATIONITERATION", attributeTypeBlack},
 	{"WEBKITANIMATIONSTART", attributeTypeBlack},
+	{"WEBKITASSOCIATEFORMCONTROLS", attributeTypeBlack},  // WebKit-specific form controls
+	{"WEBKITAUTOFILLREQUEST", attributeTypeBlack},        // WebKit-specific autofill
 	{"WEBKITBEFORETEXTINSERTED", attributeTypeBlack},
 	{"WEBKITBEGINFULLSCREEN", attributeTypeBlack},
 	{"WEBKITCURRENTPLAYBACKTARGETISWIRELESSCHANGED", attributeTypeBlack},
@@ -328,16 +337,18 @@ var blackEvents = []stringType{
 	{"WEBKITMOUSEFORCEDOWN", attributeTypeBlack},
 	{"WEBKITMOUSEFORCEUP", attributeTypeBlack},
 	{"WEBKITMOUSEFORCEWILLBEGIN", attributeTypeBlack},
+	{"WEBKITMEDIASESSIONMETADATACHANGED", attributeTypeBlack},  // WebKit-specific media session
 	{"WEBKITNEEDKEY", attributeTypeBlack},
 	{"WEBKITNETWORKINFOCHANGE", attributeTypeBlack},
 	{"WEBKITPLAYBACKTARGETAVAILABILITYCHANGED", attributeTypeBlack},
 	{"WEBKITPRESENTATIONMODECHANGED", attributeTypeBlack},
 	{"WEBKITREMOVESOURCEBUFFER", attributeTypeBlack},
+	{"WEBKITSHADOWROOTATTACHED", attributeTypeBlack},  // WebKit-specific shadow DOM
 	{"WEBKITSOURCECLOSE", attributeTypeBlack},
 	{"WEBKITSOURCEENDED", attributeTypeBlack},
 	{"WEBKITSOURCEOPEN", attributeTypeBlack},
 	{"WEBKITTRANSITIONEND", attributeTypeBlack},
-	{"WEBKITWILLREVEALBOTTOM", attributeTypeBlack},  // WebKit-specific (non-standard)
+	{"WEBKITWILLREVEALBOTTOM", attributeTypeBlack},  // WebKit-specific scroll reveal (non-standard, iOS Safari)
 	{"WHEEL", attributeTypeBlack},
 	{"WRITE", attributeTypeBlack},
 	{"WRITEEND", attributeTypeBlack},

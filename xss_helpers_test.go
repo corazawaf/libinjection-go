@@ -41,27 +41,82 @@ func TestIsBlackAttr(t *testing.T) {
 			want: attributeTypeBlack,
 		},
 		{
-			name: "Test with onpagereveal event handler (experimental)",
+			name: "Test with onbeforematch event handler",
+			attr: "onbeforematch",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbegin event handler (SVG)",
+			attr: "onbegin",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with oncommand event handler",
+			attr: "oncommand",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onpagereveal event handler",
 			attr: "onpagereveal",
 			want: attributeTypeBlack,
 		},
 		{
-			name: "Test with onpageswap event handler (experimental)",
+			name: "Test with onpageswap event handler",
 			attr: "onpageswap",
 			want: attributeTypeBlack,
 		},
 		{
-			name: "Test with onscrollsnapchange event handler (experimental)",
+			name: "Test with onredraw event handler (SVG)",
+			attr: "onredraw",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrepeat event handler (SVG)",
+			attr: "onrepeat",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrepeatevent event handler (SVG)",
+			attr: "onrepeatevent",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onscrollend event handler",
+			attr: "onscrollend",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onscrollsnapchange event handler",
 			attr: "onscrollsnapchange",
 			want: attributeTypeBlack,
 		},
 		{
-			name: "Test with onscrollsnapchanging event handler (experimental)",
+			name: "Test with onscrollsnapchanging event handler",
 			attr: "onscrollsnapchanging",
 			want: attributeTypeBlack,
 		},
 		{
-			name: "Test with onwebkitwillrevealbottom event handler (non-standard)",
+			name: "Test with onwebkitassociateformcontrols event handler",
+			attr: "onwebkitassociateformcontrols",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onwebkitautofillrequest event handler",
+			attr: "onwebkitautofillrequest",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onwebkitmediasessionmetadatachanged event handler",
+			attr: "onwebkitmediasessionmetadatachanged",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onwebkitshadowrootattached event handler",
+			attr: "onwebkitshadowrootattached",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onwebkitwillrevealbottom event handler",
 			attr: "onwebkitwillrevealbottom",
 			want: attributeTypeBlack,
 		},
