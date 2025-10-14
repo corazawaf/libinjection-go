@@ -32,6 +32,7 @@ var blackEvents = []stringType{
 	{"AUDIOEND", attributeTypeBlack},
 	{"AUDIOPROCESS", attributeTypeBlack},
 	{"AUDIOSTART", attributeTypeBlack},
+	{"AUXCLICK", attributeTypeBlack},
 	{"AUTOCOMPLETE", attributeTypeBlack},
 	{"AUTOCOMPLETEERROR", attributeTypeBlack},
 	{"BACKGROUNDFETCHABORT", attributeTypeBlack},
@@ -195,6 +196,8 @@ var blackEvents = []stringType{
 	{"OVERFLOWCHANGED", attributeTypeBlack},
 	{"PAGEHIDE", attributeTypeBlack},
 	{"PAGESHOW", attributeTypeBlack},
+	{"PAGEREVEAL", attributeTypeBlack},  // View Transitions API (experimental)
+	{"PAGESWAP", attributeTypeBlack},    // View Transitions API (experimental)
 	{"PASTE", attributeTypeBlack},
 	{"PAUSE", attributeTypeBlack},
 	{"PAYERDETAILCHANGE", attributeTypeBlack},
@@ -236,6 +239,8 @@ var blackEvents = []stringType{
 	{"RESUME", attributeTypeBlack},
 	{"RTCTRANSFORM", attributeTypeBlack},
 	{"SCROLL", attributeTypeBlack},
+	{"SCROLLSNAPCHANGE", attributeTypeBlack},    // CSS Scroll Snap (experimental)
+	{"SCROLLSNAPCHANGING", attributeTypeBlack},  // CSS Scroll Snap (experimental)
 	{"SEARCH", attributeTypeBlack},
 	{"SECURITYPOLICYVIOLATION", attributeTypeBlack},
 	{"SEEKED", attributeTypeBlack},
@@ -332,6 +337,7 @@ var blackEvents = []stringType{
 	{"WEBKITSOURCEENDED", attributeTypeBlack},
 	{"WEBKITSOURCEOPEN", attributeTypeBlack},
 	{"WEBKITTRANSITIONEND", attributeTypeBlack},
+	{"WEBKITWILLREVEALBOTTOM", attributeTypeBlack},  // WebKit-specific (non-standard)
 	{"WHEEL", attributeTypeBlack},
 	{"WRITE", attributeTypeBlack},
 	{"WRITEEND", attributeTypeBlack},

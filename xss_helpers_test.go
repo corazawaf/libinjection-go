@@ -35,6 +35,36 @@ func TestIsBlackAttr(t *testing.T) {
 			attr: "a\x00\x00\x00\x00\x00",
 			want: attributeTypeNone,
 		},
+		{
+			name: "Test with onauxclick event handler",
+			attr: "onauxclick",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onpagereveal event handler (experimental)",
+			attr: "onpagereveal",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onpageswap event handler (experimental)",
+			attr: "onpageswap",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onscrollsnapchange event handler (experimental)",
+			attr: "onscrollsnapchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onscrollsnapchanging event handler (experimental)",
+			attr: "onscrollsnapchanging",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onwebkitwillrevealbottom event handler (non-standard)",
+			attr: "onwebkitwillrevealbottom",
+			want: attributeTypeBlack,
+		},
 	}
 
 	for _, tt := range tests {

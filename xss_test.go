@@ -39,6 +39,13 @@ func TestIsXSS(t *testing.T) {
 		{input: "javascript:/*--></title></style></textarea></script></xmp><svg/onload='+/\"/+/onmouseover=1/+/[*/[]/+alert(1)//'>", isXSS: true}, // polyglot payload
 		{input: "<xss class=progress-bar-animated onanimationstart=alert(1)>", isXSS: true},
 		{input: "<button popovertarget=x>Click me</button><xss ontoggle=alert(1) popover id=x>XSS</xss>", isXSS: true},
+		// HTML5 event handler attributes (standard and experimental)
+		{input: "<tag onauxclick=alert(1)>", isXSS: true},
+		{input: "<tag onpagereveal=alert(1)>", isXSS: true},        // View Transitions API (experimental)
+		{input: "<tag onpageswap=alert(1)>", isXSS: true},          // View Transitions API (experimental)
+		{input: "<tag onscrollsnapchange=alert(1)>", isXSS: true},  // CSS Scroll Snap (experimental)
+		{input: "<tag onscrollsnapchanging=alert(1)>", isXSS: true}, // CSS Scroll Snap (experimental)
+		{input: "<tag onwebkitwillrevealbottom=alert(1)>", isXSS: true}, // WebKit-specific (non-standard)
 		// Payload sample from https://github.com/payloadbox/xss-payload-list
 		{input: "<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>", isXSS: true},
 		// True negatives
