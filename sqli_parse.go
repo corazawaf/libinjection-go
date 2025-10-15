@@ -1,17 +1,21 @@
 package libinjection
 
-import (
-	"bytes"
-	"strings"
-)
-
 var wordAcceptTable = buildAcceptTable(" []{}<>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r\"\240\000")
 var varAcceptTable = buildAcceptTable(" <>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r'`\"")
 
 func parseEolComment(s *sqliState) int {
-	index := strings.IndexByte(s.input[s.pos:], '\n')
+	// Find newline character
+	input := s.input[s.pos:]
+	index := -1
+	for i, ch := range input {
+		if ch == '\n' {
+			index = i
+			break
+		}
+	}
 
 	if index == -1 {
+		// Comment extends to end of string
 		s.current.assign(sqliTokenTypeComment, s.pos, s.length-s.pos, s.input[s.pos:])
 		return s.length
 	}
@@ -32,7 +36,14 @@ func parseMoney(s *sqliState) int {
 	case length == 0:
 		if s.input[s.pos+1] == '$' {
 			// we have $$ .. find ending $$ and make string
-			index := strings.Index(s.input[s.pos+2:], "$$")
+			searchStart := s.pos + 2
+			index := -1
+			for i := searchStart; i < s.length-1; i++ {
+				if s.input[i] == '$' && s.input[i+1] == '$' {
+					index = i - searchStart
+					break
+				}
+			}
 			if index == -1 {
 				s.current.assign(sqliTokenTypeString, s.pos+2, s.length-(s.pos+2), s.input[s.pos+2:])
 				s.current.strOpen = '$'
@@ -60,7 +71,23 @@ func parseMoney(s *sqliState) int {
 		}
 
 		// we have $foobar$ ... find it again
-		index := strings.Index(s.input[s.pos+xlen+2:], s.input[s.pos:s.pos+xlen+2])
+		tagStart := s.pos
+		tagEnd := s.pos + xlen + 2
+		searchStart := s.pos + xlen + 2
+		index := -1
+		for i := searchStart; i <= s.length-(tagEnd-tagStart); i++ {
+			match := true
+			for j := 0; j < tagEnd-tagStart; j++ {
+				if s.input[i+j] != s.input[tagStart+j] {
+					match = false
+					break
+				}
+			}
+			if match {
+				index = i - searchStart
+				break
+			}
+		}
 		if index == -1 {
 			s.current.assign(sqliTokenTypeString, s.pos+xlen+2, s.length-s.pos-xlen-2, s.input[s.pos+xlen+2:])
 			s.current.strOpen = '$'
@@ -143,7 +170,15 @@ func parseSlash(s *sqliState) int {
 	}
 
 	// skip over initial '/*'
-	index := strings.Index(s.input[s.pos+2:], "*/")
+	searchStart := s.pos + 2
+	index := -1
+	for i := searchStart; i < s.length-1; i++ {
+		if s.input[i] == '*' && s.input[i+1] == '/' {
+			index = i - searchStart
+			break
+		}
+	}
+
 	if index == -1 {
 		length = s.length - s.pos
 	} else {
@@ -157,11 +192,22 @@ func parseSlash(s *sqliState) int {
 	//
 	// Also, Mysql's "conditional" comments for version
 	// are an automatic black ban!
-	if index != -1 &&
-		strings.Contains(s.input[s.pos+2:s.pos+2+index+1], "/*") {
+	if isMysqlComment(s.input, s.pos) {
 		ctype = sqliTokenTypeEvil
-	} else if isMysqlComment(s.input, s.pos) {
-		ctype = sqliTokenTypeEvil
+	} else if index != -1 {
+		// Check for nested comments using direct byte search
+		commentStart := s.pos + 2
+		commentEnd := s.pos + 2 + index + 1
+		hasNested := false
+		for i := commentStart; i < commentEnd-1; i++ {
+			if s.input[i] == '/' && s.input[i+1] == '*' {
+				hasNested = true
+				break
+			}
+		}
+		if hasNested {
+			ctype = sqliTokenTypeEvil
+		}
 	}
 
 	s.current.assign(ctype, s.pos, length, s.input[s.pos:])
@@ -477,8 +523,17 @@ func parseEString(s *sqliState) int {
 // This handles MS SQLSERVER bracket words
 // http://stackoverflow.com/questions/3551284/sql-serverwhat-do-brackets-mean-around-column-name
 func parseBWord(s *sqliState) int {
-	end := strings.IndexByte(s.input[s.pos:], ']')
+	// Find closing bracket
+	end := -1
+	for i, ch := range s.input[s.pos:] {
+		if ch == ']' {
+			end = i
+			break
+		}
+	}
+
 	if end == -1 {
+		// No closing bracket found
 		s.current.assign(sqliTokenTypeBareWord, s.pos, s.length-s.pos, s.input[s.pos:])
 		return s.length
 	}
@@ -487,12 +542,10 @@ func parseBWord(s *sqliState) int {
 }
 
 func buildAcceptTable(acceptStr string) []byte {
-	accept := []byte(acceptStr)
 	acceptTable := make([]byte, 256)
-	for i := 0; i < 256; i++ {
-		if bytes.IndexByte(accept, byte(i)) != -1 {
-			acceptTable[i] = 1
-		}
+	// Use direct iteration instead of bytes.IndexByte for each element
+	for _, ch := range acceptStr {
+		acceptTable[byte(ch)] = 1
 	}
 	return acceptTable
 }

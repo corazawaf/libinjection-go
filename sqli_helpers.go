@@ -1,7 +1,7 @@
 package libinjection
 
 import (
-	"strings"
+	"unsafe"
 )
 
 func flag2Delimiter(flag int) byte {
@@ -20,20 +20,26 @@ func flag2Delimiter(flag int) byte {
 //		   "   \\"	" two backslash = not escaped!
 //	    "  \\\"	" three backslash = escaped!
 func isBackslashEscaped(str string) bool {
-	if strings.IndexByte(str, '\\') == -1 {
-		return false
-	}
-
-	var count = 0
-	for i := len(str) - 1; i >= 0; i-- {
-		if str[i] == '\\' {
-			count++
-		} else {
+	// Check if there's any backslash using idiomatic Go
+	hasBackslash := false
+	for _, ch := range str {
+		if ch == '\\' {
+			hasBackslash = true
 			break
 		}
 	}
+	if !hasBackslash {
+		return false
+	}
+
+	// Count trailing backslashes from the end
+	count := 0
+	for i := len(str) - 1; i >= 0 && str[i] == '\\'; i-- {
+		count++
+	}
+
 	// if number of backslashes is odd, it is escaped
-	return count%2 != 0
+	return count&1 == 1
 }
 
 func isDoubleDelimiterEscaped(str string) bool {
@@ -41,15 +47,15 @@ func isDoubleDelimiterEscaped(str string) bool {
 }
 
 func isByteWhite(ch byte) bool {
-	// ' '  space is 0x32
-	// '\t  0x09 \011 horizontal tab
-	// '\n' 0x0a \012 new line
-	// '\v' 0x0b \013 vertical tab
-	// '\f' 0x0c \014 new page
-	// '\r' 0x0d \015 carriage return
-	// 0x00 \000 null (oracle)
-	// 0xa0 \240 is Latin-1
-	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\v' || ch == '\f' || ch == '\r' || ch == '\240' || ch == '\000'
+	// Check for whitespace characters
+	// Includes space, tab, newline, vertical tab, form feed, carriage return,
+	// null (for Oracle), and Latin-1 non-breaking space
+	switch ch {
+	case ' ', '\t', '\n', '\v', '\f', '\r', '\x00', '\xa0':
+		return true
+	default:
+		return false
+	}
 }
 
 // Find the largest string containing certain characters.
@@ -57,8 +63,16 @@ func isByteWhite(ch byte) bool {
 // if accept is "ABC", then this function would be similar to
 // regexp.match(str, "[ABC]*")
 func strLenSpn(s string, length int, accept string) int {
+	// Use direct byte search - no allocations
 	for i := 0; i < length; i++ {
-		if strings.IndexByte(accept, s[i]) == -1 {
+		found := false
+		for j := 0; j < len(accept); j++ {
+			if s[i] == accept[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return i
 		}
 	}
@@ -108,7 +122,22 @@ func isMysqlComment(s string, pos int) bool {
 }
 
 func toUpperCmp(a, b string) bool {
-	return a == strings.ToUpper(b)
+	if len(a) != len(b) {
+		return false
+	}
+
+	// Compare with case insensitivity - idiomatic Go approach
+	for i, aCh := range a {
+		bCh := b[i]
+		// Convert lowercase to uppercase for comparison
+		if bCh >= 'a' && bCh <= 'z' {
+			bCh -= 32
+		}
+		if byte(aCh) != bCh {
+			return false
+		}
+	}
+	return true
 }
 
 func isKeyword(key string) byte {
@@ -116,8 +145,37 @@ func isKeyword(key string) byte {
 }
 
 func searchKeyword(key string, keywords map[string]byte) byte {
-	upperKey := strings.ToUpper(key)
+	// Try direct lookup first (no allocation if already uppercase)
+	if val, ok := keywords[key]; ok {
+		return val
+	}
 
+	// Only convert to uppercase if needed
+	hasLower := false
+	for i := 0; i < len(key); i++ {
+		if key[i] >= 'a' && key[i] <= 'z' {
+			hasLower = true
+			break
+		}
+	}
+
+	if !hasLower {
+		return byteNull
+	}
+
+	// Convert to uppercase
+	buf := make([]byte, len(key))
+	for i := 0; i < len(key); i++ {
+		if key[i] >= 'a' && key[i] <= 'z' {
+			buf[i] = key[i] - 32
+		} else {
+			buf[i] = key[i]
+		}
+	}
+
+	// Use unsafe conversion to avoid allocation for map lookup
+	// This is safe because we're only using it for the map lookup
+	upperKey := *(*string)(unsafe.Pointer(&buf))
 	if val, ok := keywords[upperKey]; ok {
 		return val
 	}
