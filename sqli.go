@@ -1,7 +1,7 @@
 package libinjection
 
 import (
-	"strings"
+	"unsafe"
 )
 
 type sqliState struct {
@@ -74,6 +74,16 @@ func sqliInit(s *sqliState, input string, flags int) {
 	s.current = &s.tokenVec[0]
 }
 
+// bytesToString converts byte slice to string without allocation
+// Only use for temporary/read-only strings that won't outlive the byte slice
+// Uses unsafe pointer conversion compatible with Go 1.17+
+func bytesToString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return *(*string)(unsafe.Pointer(&b))
+}
+
 // secondary api: detects SQLi in a string, GIVEN a context.
 //
 // A context can be:
@@ -102,7 +112,8 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 		s.tokenVec[length-1].category = sqliTokenTypeComment
 	}
 
-	fp := strings.Builder{}
+	// Pre-allocate with exact size
+	fp := make([]byte, length)
 
 	for i := 0; i < length; i++ {
 		c := s.tokenVec[i].category
@@ -120,10 +131,10 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 			return s.fingerprint
 		}
 
-		fp.WriteByte(c)
+		fp[i] = c
 	}
 
-	s.fingerprint = fp.String()
+	s.fingerprint = string(fp)
 	return s.fingerprint
 }
 
@@ -135,40 +146,44 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 //
 // Example: "UNION" + "ALL" = "UNION ALL"
 func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
-	// first token is of right type?
-	if !(tokenA.category == sqliTokenTypeKeyword ||
-		tokenA.category == sqliTokenTypeBareWord ||
-		tokenA.category == sqliTokenTypeOperator ||
-		tokenA.category == sqliTokenTypeUnion ||
-		tokenA.category == sqliTokenTypeFunction ||
-		tokenA.category == sqliTokenTypeExpression ||
-		tokenA.category == sqliTokenTypeTSQL ||
-		tokenA.category == sqliTokenTypeSQLType) {
+	// Check if first token is mergeable type using switch for better performance
+	switch tokenA.category {
+	case sqliTokenTypeKeyword, sqliTokenTypeBareWord, sqliTokenTypeOperator,
+		sqliTokenTypeUnion, sqliTokenTypeFunction, sqliTokenTypeExpression,
+		sqliTokenTypeTSQL, sqliTokenTypeSQLType:
+		// Valid first token type
+	default:
 		return false
 	}
 
-	if !(tokenB.category == sqliTokenTypeKeyword ||
-		tokenB.category == sqliTokenTypeBareWord ||
-		tokenB.category == sqliTokenTypeOperator ||
-		tokenB.category == sqliTokenTypeUnion ||
-		tokenB.category == sqliTokenTypeFunction ||
-		tokenB.category == sqliTokenTypeExpression ||
-		tokenB.category == sqliTokenTypeTSQL ||
-		tokenB.category == sqliTokenTypeSQLType ||
-		tokenB.category == sqliTokenTypeLogicOperator) {
+	// Check if second token is mergeable type
+	switch tokenB.category {
+	case sqliTokenTypeKeyword, sqliTokenTypeBareWord, sqliTokenTypeOperator,
+		sqliTokenTypeUnion, sqliTokenTypeFunction, sqliTokenTypeExpression,
+		sqliTokenTypeTSQL, sqliTokenTypeSQLType, sqliTokenTypeLogicOperator:
+		// Valid second token type
+	default:
 		return false
 	}
 
 	// +1 for space in the middle
-	if tokenA.len+tokenB.len+1 > tokenSize {
+	tmpLen := tokenA.len + 1 + tokenB.len
+	if tmpLen > tokenSize {
 		// make sure there is room for ending null
 		return false
 	}
 
-	tmp := tokenA.val[:tokenA.len] + " " + tokenB.val[:tokenB.len]
-	ch := s.lookupWord(sqliLookupWord, tmp)
+	// Build merged token using byte buffer
+	tmp := make([]byte, tmpLen)
+	copy(tmp, tokenA.val[:tokenA.len])
+	tmp[tokenA.len] = ' '
+	copy(tmp[tokenA.len+1:], tokenB.val[:tokenB.len])
+
+	// Use zero-copy conversion for lookup
+	ch := s.lookupWord(sqliLookupWord, bytesToString(tmp))
 	if ch != byteNull {
-		tokenA.assign(ch, tokenA.pos, len(tmp), tmp)
+		// Only allocate string when we need to store it
+		tokenA.assign(ch, tokenA.pos, tmpLen, string(tmp))
 		return true
 	}
 	return false
@@ -381,7 +396,16 @@ func (s *sqliState) fold() int {
 		case s.tokenVec[left].category == sqliTokenTypeCollate && s.tokenVec[left+1].category == sqliTokenTypeBareWord:
 			// there are too many collation types.. so if the bareword has a "_"
 			// then it's TYPE_SQLTYPE
-			if strings.IndexByte(s.tokenVec[left+1].val[:], '_') != -1 {
+			// Check for underscore in token value
+			hasUnderscore := false
+			tokenVal := s.tokenVec[left+1].val[:s.tokenVec[left+1].len]
+			for _, ch := range tokenVal {
+				if ch == '_' {
+					hasUnderscore = true
+					break
+				}
+			}
+			if hasUnderscore {
 				s.tokenVec[left+1].category = sqliTokenTypeSQLType
 				left = 0
 			}
@@ -634,7 +658,11 @@ func (s *sqliState) tokenize() bool {
 	if s.length == 0 {
 		return false
 	}
-	*s.current = sqliToken{}
+
+	// Optimize: only reset necessary fields instead of zeroing entire struct
+	s.current.category = byteNull
+	s.current.len = 0
+	s.current.count = 0
 
 	// if we are at beginning of string and in single quote or double quote mode
 	// then pretend the input starts with a quote
@@ -664,25 +692,23 @@ func (s *sqliState) tokenize() bool {
 //
 // return TRUE if SQLi, false otherwise
 func (s *sqliState) blacklist() bool {
-
 	length := len(s.fingerprint)
 	if length < 1 {
 		return false
 	}
 
-	fp := strings.Builder{}
-	fp.Grow(length + 1)
-
-	fp.WriteByte('0')
-	for i := 0; i < length; i++ {
-		ch := s.fingerprint[i]
+	// Build uppercase fingerprint with '0' prefix
+	fp := make([]byte, length+1)
+	fp[0] = '0'
+	for i, ch := range s.fingerprint {
 		if ch >= 'a' && ch <= 'z' {
 			ch -= 0x20
 		}
-		fp.WriteByte(ch)
+		fp[i+1] = byte(ch)
 	}
 
-	return isKeyword(fp.String()) == sqliTokenTypeFingerprint
+	// Use unsafe conversion to avoid allocation (read-only usage)
+	return isKeyword(bytesToString(fp)) == sqliTokenTypeFingerprint
 }
 
 // Given a positive match for a pattern (i.e. pattern is SQLi), this function
@@ -700,7 +726,19 @@ func (s *sqliState) notWhitelist() bool {
 		// 'sp_password' in it. Unable to find primary reference to
 		// this "feature" of SQL Server but seems to be known SQLi
 		// technique
-		if strings.Contains(s.input, "sp_password") {
+		// Check for sp_password - idiomatic Go string search
+		// MS Audit log ignores anything with 'sp_password'
+		hasSpPassword := false
+		needle := "sp_password"
+		if len(s.input) >= len(needle) {
+			for i := 0; i <= len(s.input)-len(needle); i++ {
+				if s.input[i:i+len(needle)] == needle {
+					hasSpPassword = true
+					break
+				}
+			}
+		}
+		if hasSpPassword {
 			return true
 		}
 	}
@@ -864,7 +902,15 @@ func (s *sqliState) check() bool {
 	// if input has a single quote, then
 	// test as if input was actually '
 	// example: if input if "1' = 1", then pretend it's "'1' = 1"
-	if strings.IndexByte(s.input, byteSingle) != -1 {
+	// Check for single quote
+	hasSingleQuote := false
+	for _, ch := range []byte(s.input) {
+		if ch == byteSingle {
+			hasSingleQuote = true
+			break
+		}
+	}
+	if hasSingleQuote {
 		s.sqliFingerprint(sqliFlagQuoteSingle | sqliFlagSQLAnsi)
 		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
@@ -877,7 +923,14 @@ func (s *sqliState) check() bool {
 	}
 
 	// same as above but with a double quote
-	if strings.IndexByte(s.input, byteDouble) != -1 {
+	hasDoubleQuote := false
+	for _, ch := range []byte(s.input) {
+		if ch == byteDouble {
+			hasDoubleQuote = true
+			break
+		}
+	}
+	if hasDoubleQuote {
 		s.sqliFingerprint(sqliFlagQuoteDouble | sqliFlagSQLMysql)
 		if s.lookupWord(sqliLookupFingerprint, s.fingerprint) != byteNull {
 			return true
@@ -891,8 +944,8 @@ func (s *sqliState) check() bool {
 // IsSQLi returns true if the input is SQLi
 // It also returns the fingerprint of the SQL Injection as []byte
 func IsSQLi(input string) (bool, string) {
-	state := new(sqliState)
-	sqliInit(state, input, 0)
+	var state sqliState // Stack allocation instead of heap
+	sqliInit(&state, input, 0)
 	result := state.check()
 	if result {
 		return result, state.fingerprint

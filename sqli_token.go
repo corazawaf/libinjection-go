@@ -1,6 +1,6 @@
 package libinjection
 
-import "strings"
+// No imports needed after optimization
 
 type sqliToken struct {
 	// position and length of token in original string
@@ -29,9 +29,7 @@ const (
 // since it's the wrong or EOL
 func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter byte) int {
 	// offset is to skip the perhaps first quote char
-	var (
-		str = s[pos+offset:]
-	)
+	searchStart := pos + offset
 
 	if offset > 0 {
 		// this is real quote
@@ -41,33 +39,42 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 		t.strOpen = byteNull
 	}
 
+	// Use direct byte search instead of string operations
 	for {
-		index := strings.IndexByte(str, delimiter)
-		if index != -1 {
-			str = str[index:]
+		index := -1
+		for i := searchStart; i < length; i++ {
+			if s[i] == delimiter {
+				index = i
+				break
+			}
 		}
 
-		switch {
-		case index == -1:
+		if index == -1 {
 			// string ended with no trailing quote
 			// assign what we have
 			t.assign(sqliTokenTypeString, pos+offset, length-pos-offset, s[pos+offset:])
 			t.strClose = byteNull
 			return length
-		case isBackslashEscaped(s[pos+offset : pos+offset+strings.Index(s[pos+offset:], str)]):
-			// keep going, move ahead one character
-			str = str[1:]
-			continue
-		case isDoubleDelimiterEscaped(str):
-			// keep going, move ahead two characters
-			str = str[2:]
-			continue
-		default:
-			// hey it's a normal string
-			t.assign(sqliTokenTypeString, pos+offset, len(s[pos+offset:])-len(str), s[pos+offset:])
-			t.strClose = delimiter
-			return len(s) - len(str) + 1
 		}
+
+		// Check for backslash escaping
+		if isBackslashEscaped(s[pos+offset : index]) {
+			// keep going, move ahead one character
+			searchStart = index + 1
+			continue
+		}
+
+		// Check for double delimiter escaping
+		if index+1 < length && s[index+1] == delimiter {
+			// keep going, move ahead two characters
+			searchStart = index + 2
+			continue
+		}
+
+		// hey it's a normal string
+		t.assign(sqliTokenTypeString, pos+offset, index-pos-offset, s[pos+offset:])
+		t.strClose = delimiter
+		return index + 1
 	}
 }
 
@@ -82,7 +89,12 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.category = tokenType
 	t.pos = pos
 	t.len = last
-	t.val = value[:last]
+	// Avoid string slicing if possible
+	if last == len(value) {
+		t.val = value
+	} else {
+		t.val = value[:last]
+	}
 }
 
 func (t *sqliToken) isUnaryOp() bool {
@@ -96,7 +108,10 @@ func (t *sqliToken) isUnaryOp() bool {
 	case 2:
 		return t.val[0] == '!' && t.val[1] == '!'
 	case 3:
-		return toUpperCmp("NOT", t.val[:3])
+		// Direct byte comparison instead of toUpperCmp to avoid allocation
+		return (t.val[0] == 'N' || t.val[0] == 'n') &&
+			(t.val[1] == 'O' || t.val[1] == 'o') &&
+			(t.val[2] == 'T' || t.val[2] == 't')
 	default:
 		return false
 	}

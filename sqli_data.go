@@ -1,9 +1,5 @@
 package libinjection
 
-import (
-	"strings"
-)
-
 func parseQStringCore(s *sqliState, offset int) int {
 	pos := s.pos + offset
 
@@ -34,7 +30,16 @@ func parseQStringCore(s *sqliState, offset int) int {
 		ch = '>'
 	}
 
-	index := strings.Index(s.input[pos+3:], string(ch)+string(byteSingle))
+	// Find the closing delimiter sequence without string allocations
+	searchStart := pos + 3
+	index := -1
+	for i := searchStart; i < s.length-1; i++ {
+		if s.input[i] == ch && s.input[i+1] == byteSingle {
+			index = i - searchStart
+			break
+		}
+	}
+
 	if index == -1 {
 		s.current.assign(sqliTokenTypeString, pos+3, s.length-pos-3, s.input[pos+3:])
 		s.current.strOpen = 'q'
