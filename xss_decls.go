@@ -25,6 +25,8 @@ var blackEvents = []stringType{
 	{"ADDSTREAM", attributeTypeBlack},
 	{"ADDTRACK", attributeTypeBlack},
 	{"AFTERPRINT", attributeTypeBlack},
+	{"AFTERSCRIPTEXECUTE", attributeTypeBlack},  // Firefox-specific
+	{"AFTERUPDATE", attributeTypeBlack},         // IE-specific
 	{"ANIMATIONCANCEL", attributeTypeBlack},
 	{"ANIMATIONEND", attributeTypeBlack},
 	{"ANIMATIONITERATION", attributeTypeBlack},
@@ -39,13 +41,18 @@ var blackEvents = []stringType{
 	{"BACKGROUNDFETCHCLICK", attributeTypeBlack},
 	{"BACKGROUNDFETCHFAIL", attributeTypeBlack},
 	{"BACKGROUNDFETCHSUCCESS", attributeTypeBlack},
+	{"BEFOREACTIVATE", attributeTypeBlack},      // IE-specific
 	{"BEFORECOPY", attributeTypeBlack},
 	{"BEFORECUT", attributeTypeBlack},
+	{"BEFOREDEACTIVATE", attributeTypeBlack},    // IE-specific
+	{"BEFOREEDITFOCUS", attributeTypeBlack},     // IE-specific
 	{"BEFOREINPUT", attributeTypeBlack},
 	{"BEFORELOAD", attributeTypeBlack},
 	{"BEFOREMATCH", attributeTypeBlack},  // HTML hidden=until-found - https://developer.mozilla.org/en-US/docs/Web/API/Element/beforematch_event
 	{"BEFOREPASTE", attributeTypeBlack},
 	{"BEFOREPRINT", attributeTypeBlack},
+	{"BEFORESCRIPTEXECUTE", attributeTypeBlack}, // Firefox-specific
+	{"BEFOREUPDATE", attributeTypeBlack},        // IE-specific
 	{"BEFORETOGGLE", attributeTypeBlack},
 	{"BEFOREUNLOAD", attributeTypeBlack},
 	{"BEGIN", attributeTypeBlack},  // SVG Animation
@@ -59,6 +66,7 @@ var blackEvents = []stringType{
 	{"CANCEL", attributeTypeBlack},
 	{"CANPLAY", attributeTypeBlack},
 	{"CANPLAYTHROUGH", attributeTypeBlack},
+	{"CELLCHANGE", attributeTypeBlack},  // IE-specific
 	{"CHANGE", attributeTypeBlack},
 	{"CHARGINGCHANGE", attributeTypeBlack},
 	{"CHARGINGTIMECHANGE", attributeTypeBlack},
@@ -87,7 +95,10 @@ var blackEvents = []stringType{
 	{"CUT", attributeTypeBlack},
 	{"DATAAVAILABLE", attributeTypeBlack},
 	{"DATACHANNEL", attributeTypeBlack},
+	{"DATASETCHANGED", attributeTypeBlack},  // IE-specific
+	{"DATASETCOMPLETE", attributeTypeBlack}, // IE-specific
 	{"DBLCLICK", attributeTypeBlack},
+	{"DEACTIVATE", attributeTypeBlack},  // IE-specific
 	{"DEQUEUE", attributeTypeBlack},
 	{"DEVICECHANGE", attributeTypeBlack},
 	{"DEVICEMOTION", attributeTypeBlack},
@@ -121,8 +132,10 @@ var blackEvents = []stringType{
 	{"ENTER", attributeTypeBlack},
 	{"ENTERPICTUREINPICTURE", attributeTypeBlack},
 	{"ERROR", attributeTypeBlack},
+	{"ERRORUPDATE", attributeTypeBlack},  // IE-specific
 	{"EXIT", attributeTypeBlack},
 	{"FETCH", attributeTypeBlack},
+	{"FILTERCHANGE", attributeTypeBlack},  // IE-specific
 	{"FINISH", attributeTypeBlack},
 	{"FOCUS", attributeTypeBlack},
 	{"FOCUSIN", attributeTypeBlack},
@@ -158,6 +171,7 @@ var blackEvents = []stringType{
 	{"KEYSTATUSESCHANGE", attributeTypeBlack},
 	{"KEYUP", attributeTypeBlack},
 	{"LANGUAGECHANGE", attributeTypeBlack},
+	{"LAYOUTCOMPLETE", attributeTypeBlack},  // IE-specific
 	{"LEAVEPICTUREINPICTURE", attributeTypeBlack},
 	{"LEVELCHANGE", attributeTypeBlack},
 	{"LOAD", attributeTypeBlack},
@@ -168,6 +182,7 @@ var blackEvents = []stringType{
 	{"LOADINGDONE", attributeTypeBlack},
 	{"LOADINGERROR", attributeTypeBlack},
 	{"LOADSTART", attributeTypeBlack},
+	{"LOSECAPTURE", attributeTypeBlack},      // IE-specific
 	{"LOSTPOINTERCAPTURE", attributeTypeBlack},
 	{"MARK", attributeTypeBlack},
 	{"MERCHANTVALIDATION", attributeTypeBlack},
@@ -181,6 +196,12 @@ var blackEvents = []stringType{
 	{"MOUSEOVER", attributeTypeBlack},
 	{"MOUSEUP", attributeTypeBlack},
 	{"MOUSEWHEEL", attributeTypeBlack},
+	{"MOZFULLSCREENCHANGE", attributeTypeBlack},    // Firefox-specific
+	{"MOZFULLSCREENERROR", attributeTypeBlack},     // Firefox-specific
+	{"MOZPOINTERLOCKCHANGE", attributeTypeBlack},   // Firefox-specific
+	{"MOZPOINTERLOCKERROR", attributeTypeBlack},    // Firefox-specific
+	{"MSFULLSCREENCHANGE", attributeTypeBlack},     // IE/Edge-specific
+	{"MSFULLSCREENERROR", attributeTypeBlack},      // IE/Edge-specific
 	{"MUTE", attributeTypeBlack},
 	{"NAVIGATE", attributeTypeBlack},
 	{"NAVIGATEERROR", attributeTypeBlack},
@@ -223,6 +244,7 @@ var blackEvents = []stringType{
 	{"PREVIOUSTRACK", attributeTypeBlack},
 	{"PROCESSORERROR", attributeTypeBlack},
 	{"PROGRESS", attributeTypeBlack},
+	{"PROPERTYCHANGE", attributeTypeBlack},  // IE-specific
 	{"PUSH", attributeTypeBlack},
 	{"PUSHNOTIFICATION", attributeTypeBlack},
 	{"PUSHSUBSCRIPTIONCHANGE", attributeTypeBlack},
@@ -240,9 +262,15 @@ var blackEvents = []stringType{
 	{"REPEATEVENT", attributeTypeBlack},  // SVG animation repeat event
 	{"RESET", attributeTypeBlack},
 	{"RESIZE", attributeTypeBlack},
+	{"RESIZEEND", attributeTypeBlack},       // IE-specific
+	{"RESIZESTART", attributeTypeBlack},     // IE-specific
 	{"RESOURCETIMINGBUFFERFULL", attributeTypeBlack},
 	{"RESULT", attributeTypeBlack},
 	{"RESUME", attributeTypeBlack},
+	{"ROWENTER", attributeTypeBlack},      // IE-specific
+	{"ROWEXIT", attributeTypeBlack},       // IE-specific
+	{"ROWSDELETE", attributeTypeBlack},    // IE-specific
+	{"ROWSINSERTED", attributeTypeBlack},  // IE-specific
 	{"RTCTRANSFORM", attributeTypeBlack},
 	{"SCROLL", attributeTypeBlack},
 	{"SCROLLEND", attributeTypeBlack},           // CSS Scroll - https://developer.mozilla.org/en-US/docs/Web/API/Document/scrollend_event

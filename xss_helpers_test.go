@@ -120,6 +120,147 @@ func TestIsBlackAttr(t *testing.T) {
 			attr: "onwebkitwillrevealbottom",
 			want: attributeTypeBlack,
 		},
+		// Browser-specific event handlers
+		{
+			name: "Test with onafterscriptexecute event handler (Firefox)",
+			attr: "onafterscriptexecute",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onafterupdate event handler (IE)",
+			attr: "onafterupdate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbeforeactivate event handler (IE)",
+			attr: "onbeforeactivate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbeforedeactivate event handler (IE)",
+			attr: "onbeforedeactivate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbeforeeditfocus event handler (IE)",
+			attr: "onbeforeeditfocus",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbeforescriptexecute event handler (Firefox)",
+			attr: "onbeforescriptexecute",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onbeforeupdate event handler (IE)",
+			attr: "onbeforeupdate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with oncellchange event handler (IE)",
+			attr: "oncellchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with ondatasetchanged event handler (IE)",
+			attr: "ondatasetchanged",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with ondatasetcomplete event handler (IE)",
+			attr: "ondatasetcomplete",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with ondeactivate event handler (IE)",
+			attr: "ondeactivate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onerrorupdate event handler (IE)",
+			attr: "onerrorupdate",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onfilterchange event handler (IE)",
+			attr: "onfilterchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onlayoutcomplete event handler (IE)",
+			attr: "onlayoutcomplete",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onlosecapture event handler (IE)",
+			attr: "onlosecapture",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmozfullscreenchange event handler (Firefox)",
+			attr: "onmozfullscreenchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmozfullscreenerror event handler (Firefox)",
+			attr: "onmozfullscreenerror",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmozpointerlockchange event handler (Firefox)",
+			attr: "onmozpointerlockchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmozpointerlockerror event handler (Firefox)",
+			attr: "onmozpointerlockerror",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmsfullscreenchange event handler (IE/Edge)",
+			attr: "onmsfullscreenchange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onmsfullscreenerror event handler (IE/Edge)",
+			attr: "onmsfullscreenerror",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onpropertychange event handler (IE)",
+			attr: "onpropertychange",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onresizeend event handler (IE)",
+			attr: "onresizeend",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onresizestart event handler (IE)",
+			attr: "onresizestart",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrowenter event handler (IE)",
+			attr: "onrowenter",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrowexit event handler (IE)",
+			attr: "onrowexit",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrowsdelete event handler (IE)",
+			attr: "onrowsdelete",
+			want: attributeTypeBlack,
+		},
+		{
+			name: "Test with onrowsinserted event handler (IE)",
+			attr: "onrowsinserted",
+			want: attributeTypeBlack,
+		},
 	}
 
 	for _, tt := range tests {

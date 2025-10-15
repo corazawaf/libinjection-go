@@ -57,6 +57,35 @@ func TestIsXSS(t *testing.T) {
 		{input: "<tag onwebkitmediasessionmetadatachanged=alert(1)>", isXSS: true}, // WebKit-specific
 		{input: "<tag onwebkitshadowrootattached=alert(1)>", isXSS: true},          // WebKit-specific
 		{input: "<tag onwebkitwillrevealbottom=alert(1)>", isXSS: true}, // WebKit-specific
+		// Browser-specific event handlers (IE, Firefox, Edge)
+		{input: "<tag onafterscriptexecute=alert(1)>", isXSS: true},  // Firefox
+		{input: "<tag onafterupdate=alert(1)>", isXSS: true},         // IE
+		{input: "<tag onbeforeactivate=alert(1)>", isXSS: true},      // IE
+		{input: "<tag onbeforedeactivate=alert(1)>", isXSS: true},    // IE
+		{input: "<tag onbeforeeditfocus=alert(1)>", isXSS: true},     // IE
+		{input: "<tag onbeforescriptexecute=alert(1)>", isXSS: true}, // Firefox
+		{input: "<tag onbeforeupdate=alert(1)>", isXSS: true},        // IE
+		{input: "<tag oncellchange=alert(1)>", isXSS: true},          // IE
+		{input: "<tag ondatasetchanged=alert(1)>", isXSS: true},      // IE
+		{input: "<tag ondatasetcomplete=alert(1)>", isXSS: true},     // IE
+		{input: "<tag ondeactivate=alert(1)>", isXSS: true},          // IE
+		{input: "<tag onerrorupdate=alert(1)>", isXSS: true},         // IE
+		{input: "<tag onfilterchange=alert(1)>", isXSS: true},        // IE
+		{input: "<tag onlayoutcomplete=alert(1)>", isXSS: true},      // IE
+		{input: "<tag onlosecapture=alert(1)>", isXSS: true},         // IE
+		{input: "<tag onmozfullscreenchange=alert(1)>", isXSS: true}, // Firefox
+		{input: "<tag onmozfullscreenerror=alert(1)>", isXSS: true},  // Firefox
+		{input: "<tag onmozpointerlockchange=alert(1)>", isXSS: true}, // Firefox
+		{input: "<tag onmozpointerlockerror=alert(1)>", isXSS: true}, // Firefox
+		{input: "<tag onmsfullscreenchange=alert(1)>", isXSS: true},  // IE/Edge
+		{input: "<tag onmsfullscreenerror=alert(1)>", isXSS: true},   // IE/Edge
+		{input: "<tag onpropertychange=alert(1)>", isXSS: true},      // IE
+		{input: "<tag onresizeend=alert(1)>", isXSS: true},           // IE
+		{input: "<tag onresizestart=alert(1)>", isXSS: true},         // IE
+		{input: "<tag onrowenter=alert(1)>", isXSS: true},            // IE
+		{input: "<tag onrowexit=alert(1)>", isXSS: true},             // IE
+		{input: "<tag onrowsdelete=alert(1)>", isXSS: true},          // IE
+		{input: "<tag onrowsinserted=alert(1)>", isXSS: true},        // IE
 		// Payload sample from https://github.com/payloadbox/xss-payload-list
 		{input: "<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>", isXSS: true},
 		// True negatives
