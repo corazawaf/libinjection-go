@@ -411,7 +411,9 @@ func (h *h5State) stateBeforeAttributeValue() bool {
 		return false
 	}
 
-	switch uint8(ch) {
+	// ch is guaranteed to be in range 0-255 here (not EOF)
+	chByte := byte(ch)
+	switch chByte {
 	case byteDouble:
 		return h.stateAttributeValueDoubleQuote()
 	case byteSingle:

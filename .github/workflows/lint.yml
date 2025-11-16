@@ -21,9 +21,14 @@ jobs:
     - name: Install dependencies
       run: |
         cd /tmp && go install github.com/go-critic/go-critic/cmd/gocritic@latest
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
         go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
         go install golang.org/x/lint/golint@latest
+        go install github.com/mgechev/revive@latest
+        go install golang.org/x/tools/cmd/goimports@latest
+        go install mvdan.cc/gofumpt@latest
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        go install github.com/securego/gosec/v2/cmd/gosec@latest
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
     - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
     - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
