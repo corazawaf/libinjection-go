@@ -1,13 +1,7 @@
 --TEST--
-test folding of bizzaro mysql bug
+test folding of bizzaro mysql bug (updated: 10.e is now ignored per MySQL behavior)
 --INPUT--
 SELECT 10.e.`table_name`
 --EXPECTED--
 E SELECT
-n 10.e
-
-
-
-
-
-
+n table_name

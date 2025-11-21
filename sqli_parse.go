@@ -361,14 +361,21 @@ func parseNumber(s *sqliState) int {
 		}
 	}
 
-	if haveE == 1 && haveExp == 0 {
-		// very special form of
-		// "1234.e" "10.10E" ".E" "1e+"
-		// this is a WORD not a number
-		s.current.assign(sqliTokenTypeBareWord, start, pos-start, s.input[start:])
-	} else {
+	// very special form of
+	// "1234.e" "10.10E" ".E" "1e+"
+	//
+	// https://gosecure.ai/blog/2021/10/19/a-scientific-notation-bug-in-mysql-left-aws-waf-clients-vulnerable-to-sql-injection/
+	// From this blog, we could see 1.e or 1.E is a risk SQLi. The SQL parser will
+	// ignore it during parsing. Like "1.e(1)" => (1), 1 1.e/1 => 1/1 etc.
+	// So, if a payload such as "1' or 1.e(1)" bypasses SQLi detection, which is really
+	// risky, we should detect such SQLi injection to prevent WAF bypass.
+	//
+	// The fix: don't assign any token when haveE == 1 && haveExp == 0,
+	// effectively ignoring it like MySQL does.
+	if !(haveE == 1 && haveExp == 0) {
 		s.current.assign(sqliTokenTypeNumber, start, pos-start, s.input[start:])
 	}
+
 	return pos
 }
 

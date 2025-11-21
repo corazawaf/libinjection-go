@@ -1,0 +1,7 @@
+--TEST--
+1.e scientific notation bypass - modulo operator
+--INPUT--
+abc or 2 1.e%2
+--EXPECTED--
+n&1
+

@@ -1,0 +1,7 @@
+--TEST--
+1.E scientific notation bypass - division operator
+--INPUT--
+1' or 2 1.E/1
+--EXPECTED--
+s&1
+
