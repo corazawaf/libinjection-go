@@ -1,9 +1,8 @@
-name: Create Release
+name: release-please
 on:
   push:
     branches:
       - main
-      - master
     paths-ignore:
       - "**/*.md"
       - "**/*.txt"
@@ -11,23 +10,22 @@ on:
       - "LICENSE"
       - ".gitignore"
       - ".github/**"
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
-  release:
-    runs-on: ubuntu-24.04
+  release-please:
+    runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
         with:
-          fetch-depth: 0
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create a GitHub release
-        uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1
-        with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          generateReleaseNotes: true
+          # this assumes that you have created a personal access token
+          # (PAT) and configured it as a GitHub action secret named
+          # `MY_RELEASE_PLEASE_TOKEN` (this secret name is not important).
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # this is a built-in strategy in release-please, see "Action Inputs"
+          # for more options
+          release-type: simple
