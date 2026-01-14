@@ -9,7 +9,6 @@ on:
       - "**/*_test.go"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
 
 permissions:
   contents: write
