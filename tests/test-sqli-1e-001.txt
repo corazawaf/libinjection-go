@@ -1,0 +1,7 @@
+--TEST--
+1.e scientific notation bypass - basic case
+--INPUT--
+1' or 1.e(1)
+--EXPECTED--
+s&(1)
+
