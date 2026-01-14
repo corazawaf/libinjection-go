@@ -1,4 +1,4 @@
-name: Create Release
+name: release-please
 on:
   push:
     branches:
@@ -9,14 +9,11 @@ on:
       - "**/*_test.go"
       - "LICENSE"
       - ".gitignore"
-      - ".github/**"
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
-
-name: release-please
 
 jobs:
   release-please:
@@ -24,9 +21,9 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
         with:
-          # this assumes that you have created a personal access token
-          # (PAT) and configured it as a GitHub action secret named
-          # `MY_RELEASE_PLEASE_TOKEN` (this secret name is not important).
+          # use the default GitHub Actions token for authentication
+          # for most repositories, `secrets.GITHUB_TOKEN` is sufficient; a custom PAT
+          # is only needed for advanced scenarios (e.g., cross-repo releases)
           token: ${{ secrets.GITHUB_TOKEN }}
           # this is a built-in strategy in release-please, see "Action Inputs"
           # for more options
