@@ -41,6 +41,12 @@ func TestIsXSS(t *testing.T) {
 		{input: "<button popovertarget=x>Click me</button><xss ontoggle=alert(1) popover id=x>XSS</xss>", isXSS: true},
 		// Payload sample from https://github.com/payloadbox/xss-payload-list
 		{input: "<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"%(htc)s\"><xss:xss>XSS</xss:xss></HTML>\"\"\",\"XML namespace.\"),(\"\"\"<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:javascript:alert(1)\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>", isXSS: true},
+		// Events from issue #70 - previously undetected event handlers
+		{input: "<img onauxclick=alert(1)>", isXSS: true},
+		{input: "<img onpagereveal=alert(1)>", isXSS: true},
+		{input: "<img onpageswap=alert(1)>", isXSS: true},
+		{input: "<img onscrollsnapchange=alert(1)>", isXSS: true},
+		{input: "<img onscrollsnapchanging=alert(1)>", isXSS: true},
 		// True negatives
 		{input: "myvar=onfoobar==", isXSS: false},
 		{input: "onY29va2llcw==", isXSS: false}, // base64 encoded "thisisacookie", prefixed by "on"

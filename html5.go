@@ -411,8 +411,9 @@ func (h *h5State) stateBeforeAttributeValue() bool {
 		return false
 	}
 
-	// ch is guaranteed to be in range 0-255 here (not EOF)
-	chByte := byte(ch)
+	// ch is guaranteed to be in range 0-255 here (not EOF).
+	// Mask to 8 bits to satisfy gosec G115 (int -> byte overflow check).
+	chByte := byte(ch & 0xFF)
 	switch chByte {
 	case byteDouble:
 		return h.stateAttributeValueDoubleQuote()

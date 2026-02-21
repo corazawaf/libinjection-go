@@ -165,7 +165,8 @@ func htmlEncodeStartsWith(a, b string) bool {
 		if cb >= 'a' && cb <= 'z' {
 			cb -= 0x20
 		}
-		bs = append(bs, byte(cb))
+		// Mask to 8 bits to match C's implicit char truncation behavior.
+		bs = append(bs, byte(cb&0xFF))
 	}
 
 	return strings.Contains(string(bs), a)
