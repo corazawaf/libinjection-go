@@ -21,10 +21,7 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
         with:
-          # use the default GitHub Actions token for authentication
-          # for most repositories, `secrets.GITHUB_TOKEN` is sufficient; a custom PAT
-          # is only needed for advanced scenarios (e.g., cross-repo releases)
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           # this is a built-in strategy in release-please, see "Action Inputs"
           # for more options
           release-type: simple
