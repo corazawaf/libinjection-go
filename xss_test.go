@@ -47,7 +47,15 @@ func TestIsXSS(t *testing.T) {
 		{input: "<img onpageswap=alert(1)>", isXSS: true},
 		{input: "<img onscrollsnapchange=alert(1)>", isXSS: true},
 		{input: "<img onscrollsnapchanging=alert(1)>", isXSS: true},
+		// XML comment detection (tokenLen must be > 3 to reach this check)
+		{input: "<!--xml -->", isXSS: true},
+		{input: "<!--xmlfoo-->", isXSS: true},
+		{input: "<!--xml:namespace-->", isXSS: true},
+		{input: "<!--XML -->", isXSS: true},
 		// True negatives
+		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
+		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
+		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
 		{input: "onY29va2llcw==", isXSS: false}, // base64 encoded "thisisacookie", prefixed by "on"
 	}

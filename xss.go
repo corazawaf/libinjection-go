@@ -63,7 +63,7 @@ func isXSS(input string, flags int) bool {
 					return true
 				}
 
-				if strings.ToUpper(h5.tokenStart[1:4]) == "XML" {
+				if strings.ToUpper(h5.tokenStart[0:3]) == "XML" {
 					return true
 				}
 			}
