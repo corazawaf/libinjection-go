@@ -1,0 +1,6 @@
+--TEST--
+XSS via event handler
+--INPUT--
+<img onerror=alert(1)>
+--EXPECTED--
+1

@@ -1,0 +1,6 @@
+--TEST--
+Not XSS, benign HTML
+--INPUT--
+<a href="https://example.com">link</a>
+--EXPECTED--
+0

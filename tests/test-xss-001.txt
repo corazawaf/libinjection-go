@@ -1,0 +1,6 @@
+--TEST--
+XSS via script tag
+--INPUT--
+<script>alert(1);</script>
+--EXPECTED--
+1
