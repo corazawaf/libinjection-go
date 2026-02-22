@@ -45,3 +45,49 @@ func TestIsBlackAttr(t *testing.T) {
 		})
 	}
 }
+
+func TestHtmlEncodeStartsWith(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+		input  string
+		want   bool
+	}{
+		{name: "exact match", prefix: "DATA", input: "data:", want: true},
+		{name: "prefix match with trailing content", prefix: "JAVA", input: "javascript:alert(1)", want: true},
+		{name: "no match", prefix: "DATA", input: "https://example.com", want: false},
+		{name: "pattern in middle should not match", prefix: "DATA", input: "https://github.com/Simbiat/database", want: false},
+		{name: "pattern at end should not match", prefix: "DATA", input: "nodata", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := htmlEncodeStartsWith(tt.prefix, tt.input); got != tt.want {
+				t.Errorf("htmlEncodeStartsWith(%q, %q) = %v, want %v", tt.prefix, tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsBlackURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want bool
+	}{
+		{name: "data URL", url: "data:text/html,<script>alert(1)</script>", want: true},
+		{name: "javascript URL", url: "javascript:alert(1)", want: true},
+		{name: "vbscript URL", url: "vbscript:msgbox", want: true},
+		{name: "https URL", url: "https://example.com", want: false},
+		{name: "URL containing data in path", url: "https://github.com/Simbiat/database", want: false},
+		{name: "URL containing java in path", url: "https://example.com/javascript-tutorials", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBlackURL(tt.url); got != tt.want {
+				t.Errorf("isBlackURL(%q) = %v, want %v", tt.url, got, tt.want)
+			}
+		})
+	}
+}
