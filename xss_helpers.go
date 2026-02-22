@@ -20,13 +20,13 @@ func isBlackTag(s string) bool {
 		}
 	}
 
-	switch sUpperWithoutNulls {
-	// anything SVG or XSL(t) related
-	case "SVT", "XSL":
+	// anything SVG or XSL(t) related (prefix match on first 3 chars)
+	if strings.HasPrefix(sUpperWithoutNulls, "SVG") ||
+		strings.HasPrefix(sUpperWithoutNulls, "XSL") {
 		return true
-	default:
-		return false
 	}
+
+	return false
 }
 
 func isBlackAttr(s string) int {

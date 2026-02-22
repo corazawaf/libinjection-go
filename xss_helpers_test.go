@@ -91,3 +91,30 @@ func TestIsBlackURL(t *testing.T) {
 		})
 	}
 }
+
+func TestIsBlackTag(t *testing.T) {
+	tests := []struct {
+		name string
+		tag  string
+		want bool
+	}{
+		{name: "script tag", tag: "SCRIPT", want: true},
+		{name: "svg exact", tag: "svg", want: true},
+		{name: "SVG uppercase", tag: "SVG", want: true},
+		{name: "svg prefixed tag", tag: "svganimate", want: true},
+		{name: "svg namespaced", tag: "svg:rect", want: true},
+		{name: "xsl exact", tag: "xsl", want: true},
+		{name: "xsl prefixed tag", tag: "xsl:template", want: true},
+		{name: "div tag", tag: "div", want: false},
+		{name: "span tag", tag: "span", want: false},
+		{name: "too short", tag: "sv", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBlackTag(tt.tag); got != tt.want {
+				t.Errorf("isBlackTag(%q) = %v, want %v", tt.tag, got, tt.want)
+			}
+		})
+	}
+}

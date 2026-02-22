@@ -52,6 +52,10 @@ func TestIsXSS(t *testing.T) {
 		{input: "<!--xmlfoo-->", isXSS: true},
 		{input: "<!--xml:namespace-->", isXSS: true},
 		{input: "<!--XML -->", isXSS: true},
+		// SVG tags
+		{input: "<svg>", isXSS: true},
+		{input: "<svg onload=alert(1)>", isXSS: true},
+		{input: "<svganimate>", isXSS: true},
 		// True negatives
 		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
 		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
@@ -117,7 +121,7 @@ func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 
 	switch flag {
 	case xss:
-		if IsXSS(data["--INPUT--"]) {
+		if IsXSS(data[sectionInput]) {
 			actual = "1"
 		} else {
 			actual = "0"
