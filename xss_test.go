@@ -50,6 +50,9 @@ func TestIsXSS(t *testing.T) {
 		// True negatives
 		{input: "myvar=onfoobar==", isXSS: false},
 		{input: "onY29va2llcw==", isXSS: false}, // base64 encoded "thisisacookie", prefixed by "on"
+		// False positives from issue #46 - URLs containing black scheme names in path
+		{input: `=<a href="https://data">`, isXSS: false},
+		{input: `<a href="https://github.com/Simbiat/database">`, isXSS: false},
 	}
 
 	for _, example := range examples {

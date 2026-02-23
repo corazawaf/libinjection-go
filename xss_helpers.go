@@ -169,7 +169,7 @@ func htmlEncodeStartsWith(a, b string) bool {
 		bs = append(bs, byte(cb&0xFF))
 	}
 
-	return strings.Contains(string(bs), a)
+	return strings.HasPrefix(string(bs), a)
 }
 
 func isBlackURL(s string) bool {
