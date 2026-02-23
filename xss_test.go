@@ -117,7 +117,11 @@ func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 
 	switch flag {
 	case xss:
-
+		if IsXSS(data["--INPUT--"]) {
+			actual = "1"
+		} else {
+			actual = "0"
+		}
 	case html5:
 		h5 := new(h5State)
 		h5.init(data["--INPUT--"], html5FlagsDataState)
@@ -144,9 +148,14 @@ func TestXSSDriver(t *testing.T) {
 	for _, fi := range dir {
 		p := filepath.Join(baseDir, fi.Name())
 		data := readTestData(p)
-		if strings.Contains(fi.Name(), "-html5-") {
+		switch {
+		case strings.Contains(fi.Name(), "-html5-"):
 			t.Run(fi.Name(), func(t *testing.T) {
 				runXSSTest(t, data, p, html5)
+			})
+		case strings.Contains(fi.Name(), "-xss-"):
+			t.Run(fi.Name(), func(t *testing.T) {
+				runXSSTest(t, data, p, xss)
 			})
 		}
 	}
@@ -166,6 +175,7 @@ func BenchmarkXSSDriver(b *testing.B) {
 
 	cases := struct {
 		html5 []testCaseXSS
+		xss   []testCaseXSS
 	}{}
 
 	for _, fi := range dir {
@@ -178,7 +188,8 @@ func BenchmarkXSSDriver(b *testing.B) {
 		switch {
 		case strings.Contains(fi.Name(), "-html5-"):
 			cases.html5 = append(cases.html5, tc)
-		default:
+		case strings.Contains(fi.Name(), "-xss-"):
+			cases.xss = append(cases.xss, tc)
 		}
 	}
 
@@ -188,6 +199,16 @@ func BenchmarkXSSDriver(b *testing.B) {
 			for _, tc := range cases.html5 {
 				tt := tc
 				runXSSTest(b, tt.data, tt.name, html5)
+			}
+		}
+	})
+
+	b.Run("xss", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, tc := range cases.xss {
+				tt := tc
+				runXSSTest(b, tt.data, tt.name, xss)
 			}
 		}
 	})

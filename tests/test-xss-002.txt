@@ -1,0 +1,6 @@
+--TEST--
+XSS via javascript URL in href
+--INPUT--
+<a href="javascript:alert(1)">
+--EXPECTED--
+1

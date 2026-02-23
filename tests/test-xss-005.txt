@@ -1,0 +1,6 @@
+--TEST--
+Not XSS, plain text
+--INPUT--
+hello world
+--EXPECTED--
+0

@@ -1,0 +1,6 @@
+--TEST--
+XSS via data URL in href
+--INPUT--
+<a href="data:text/html,<script>alert(1)</script>">
+--EXPECTED--
+1
