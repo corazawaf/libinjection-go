@@ -35,13 +35,23 @@ func asciiEqualFold(a, b string) bool {
 }
 
 // upperRemoveNulls normalizes s into buf: uppercases ASCII and removes null bytes.
-// Returns the number of bytes written.
-func upperRemoveNulls(buf []byte, s string) int {
-	n := 0
-	for i := 0; i < len(s) && n < len(buf); i++ {
+// Returns the number of bytes written and whether the input was truncated.
+// Truncation occurs when the number of non-null bytes in s exceeds len(buf)
+// (maxNormalizedTokenLen = 64). Any bytes beyond that limit are silently dropped.
+// Since all blacklisted tag/attribute names are at most 48 bytes, truncation does
+// not affect detection accuracy for any name currently in the blacklist; however,
+// callers should check the truncated return value to avoid false negatives if the
+// blacklist grows beyond 64 bytes in the future, or to skip further checks when
+// a clearly over-length token cannot possibly match.
+func upperRemoveNulls(buf []byte, s string) (n int, truncated bool) {
+	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if c == 0 {
 			continue
+		}
+		if n == len(buf) {
+			truncated = true
+			break
 		}
 		if c >= 'a' && c <= 'z' {
 			c -= 0x20
@@ -49,7 +59,7 @@ func upperRemoveNulls(buf []byte, s string) int {
 		buf[n] = c
 		n++
 	}
-	return n
+	return n, truncated
 }
 
 func isBlackTag(s string) bool {
@@ -58,7 +68,11 @@ func isBlackTag(s string) bool {
 	}
 
 	var buf [maxNormalizedTokenLen]byte
-	n := upperRemoveNulls(buf[:], s)
+	n, truncated := upperRemoveNulls(buf[:], s)
+	if truncated {
+		// Input is longer than any blacklisted tag name; cannot match.
+		return false
+	}
 	normalized := buf[:n]
 
 	for i := 0; i < len(blackTags); i++ {
@@ -78,7 +92,11 @@ func isBlackTag(s string) bool {
 
 func isBlackAttr(s string) int {
 	var buf [maxNormalizedTokenLen]byte
-	n := upperRemoveNulls(buf[:], s)
+	n, truncated := upperRemoveNulls(buf[:], s)
+	if truncated {
+		// Input is longer than any blacklisted attribute name; cannot match.
+		return attributeTypeNone
+	}
 
 	if n < 2 {
 		return attributeTypeNone
