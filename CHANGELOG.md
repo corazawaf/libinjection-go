@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/corazawaf/libinjection-go/compare/v0.3.1...v0.3.2) (2026-02-23)
+
+
+### Performance Improvements
+
+* optimize sqli detection with safe, zero-alloc patterns ([#97](https://github.com/corazawaf/libinjection-go/issues/97)) ([9f17d96](https://github.com/corazawaf/libinjection-go/commit/9f17d9614b0f585ecfa71f61cdee9646be983c63))
+* optimize xss detection with zero-alloc patterns ([#98](https://github.com/corazawaf/libinjection-go/issues/98)) ([28df6ea](https://github.com/corazawaf/libinjection-go/commit/28df6ea908b9af91b3b7671592ace1381503c46d))
+
 ## [0.3.1](https://github.com/corazawaf/libinjection-go/compare/v0.3.0...v0.3.1) (2026-02-23)
 
 
