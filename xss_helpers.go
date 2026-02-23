@@ -4,8 +4,52 @@ import (
 	"strings"
 )
 
+// maxNormalizedTokenLen is the stack buffer size for uppercased, null-stripped
+// tag and attribute names. Must exceed the longest blacklisted name
+// (currently "ON" + "WEBKITCURRENTPLAYBACKTARGETISWIRELESSCHANGED" = 48).
+const maxNormalizedTokenLen = 64
+
 func isH5White(ch byte) bool {
 	return ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == ' '
+}
+
+// asciiEqualFold compares two equal-length ASCII strings case-insensitively
+// without allocating.
+func asciiEqualFold(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		ca, cb := a[i], b[i]
+		if ca >= 'A' && ca <= 'Z' {
+			ca += 0x20
+		}
+		if cb >= 'A' && cb <= 'Z' {
+			cb += 0x20
+		}
+		if ca != cb {
+			return false
+		}
+	}
+	return true
+}
+
+// upperRemoveNulls normalizes s into buf: uppercases ASCII and removes null bytes.
+// Returns the number of bytes written.
+func upperRemoveNulls(buf []byte, s string) int {
+	n := 0
+	for i := 0; i < len(s) && n < len(buf); i++ {
+		c := s[i]
+		if c == 0 {
+			continue
+		}
+		if c >= 'a' && c <= 'z' {
+			c -= 0x20
+		}
+		buf[n] = c
+		n++
+	}
+	return n
 }
 
 func isBlackTag(s string) bool {
@@ -13,16 +57,18 @@ func isBlackTag(s string) bool {
 		return false
 	}
 
-	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+	var buf [maxNormalizedTokenLen]byte
+	n := upperRemoveNulls(buf[:], s)
+	normalized := buf[:n]
+
 	for i := 0; i < len(blackTags); i++ {
-		if sUpperWithoutNulls == blackTags[i] {
+		if string(normalized) == blackTags[i] {
 			return true
 		}
 	}
 
 	// anything SVG or XSL(t) related (prefix match on first 3 chars)
-	if strings.HasPrefix(sUpperWithoutNulls, "SVG") ||
-		strings.HasPrefix(sUpperWithoutNulls, "XSL") {
+	if n >= 3 && (string(normalized[:3]) == "SVG" || string(normalized[:3]) == "XSL") {
 		return true
 	}
 
@@ -30,23 +76,25 @@ func isBlackTag(s string) bool {
 }
 
 func isBlackAttr(s string) int {
-	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+	var buf [maxNormalizedTokenLen]byte
+	n := upperRemoveNulls(buf[:], s)
 
-	length := len(sUpperWithoutNulls)
-	if length < 2 {
+	if n < 2 {
 		return attributeTypeNone
 	}
-	if length >= 5 {
-		if sUpperWithoutNulls == "XMLNS" || sUpperWithoutNulls == "XLINK" {
+	normalized := buf[:n]
+
+	if n >= 5 {
+		if string(normalized) == "XMLNS" || string(normalized) == "XLINK" {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
 		}
 		// JavaScript on.* event handlers
-		if sUpperWithoutNulls[:2] == "ON" {
-			eventName := sUpperWithoutNulls[2:]
+		if buf[0] == 'O' && buf[1] == 'N' {
+			eventName := buf[2:n]
 			// got javascript on- attribute name
 			for _, event := range blackEvents {
-				if eventName == event.name {
+				if string(eventName) == event.name {
 					return event.attributeType
 				}
 			}
@@ -54,7 +102,7 @@ func isBlackAttr(s string) int {
 	}
 
 	for _, black := range blacks {
-		if sUpperWithoutNulls == black.name {
+		if string(normalized) == black.name {
 			// got banner attribute name
 			return black.attributeType
 		}
@@ -141,9 +189,9 @@ func htmlDecodeByteAt(s string) (int, int) {
 func htmlEncodeStartsWith(a, b string) bool {
 	var (
 		first  = true
-		bs     []byte
 		pos    = 0
 		length = len(b)
+		ai     = 0
 	)
 
 	for length > 0 {
@@ -166,10 +214,19 @@ func htmlEncodeStartsWith(a, b string) bool {
 			cb -= 0x20
 		}
 		// Mask to 8 bits to match C's implicit char truncation behavior.
-		bs = append(bs, byte(cb&0xFF))
+		ch := byte(cb & 0xFF)
+
+		if ai >= len(a) {
+			// already matched the full prefix
+			return true
+		}
+		if ch != a[ai] {
+			return false
+		}
+		ai++
 	}
 
-	return strings.HasPrefix(string(bs), a)
+	return ai >= len(a)
 }
 
 func isBlackURL(s string) bool {
