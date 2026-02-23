@@ -102,7 +102,7 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 		s.tokenVec[length-1].category = sqliTokenTypeComment
 	}
 
-	fp := strings.Builder{}
+	var buf [maxTokens]byte
 
 	for i := 0; i < length; i++ {
 		c := s.tokenVec[i].category
@@ -120,10 +120,10 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 			return s.fingerprint
 		}
 
-		fp.WriteByte(c)
+		buf[i] = c
 	}
 
-	s.fingerprint = fp.String()
+	s.fingerprint = string(buf[:length])
 	return s.fingerprint
 }
 
@@ -381,7 +381,7 @@ func (s *sqliState) fold() int {
 		case s.tokenVec[left].category == sqliTokenTypeCollate && s.tokenVec[left+1].category == sqliTokenTypeBareWord:
 			// there are too many collation types.. so if the bareword has a "_"
 			// then it's TYPE_SQLTYPE
-			if strings.IndexByte(s.tokenVec[left+1].val[:], '_') != -1 {
+			if strings.IndexByte(s.tokenVec[left+1].val[:s.tokenVec[left+1].len], '_') != -1 {
 				s.tokenVec[left+1].category = sqliTokenTypeSQLType
 				left = 0
 			}
@@ -670,19 +670,25 @@ func (s *sqliState) blacklist() bool {
 		return false
 	}
 
-	fp := strings.Builder{}
-	fp.Grow(length + 1)
-
-	fp.WriteByte('0')
+	var buf [maxTokens + 1]byte
+	buf[0] = '0'
+	upper := buf[1 : length+1]
 	for i := 0; i < length; i++ {
 		ch := s.fingerprint[i]
 		if ch >= 'a' && ch <= 'z' {
 			ch -= 0x20
 		}
-		fp.WriteByte(ch)
+		upper[i] = ch
 	}
-
-	return isKeyword(fp.String()) == sqliTokenTypeFingerprint
+	fp := buf[:length+1]
+	// Note: buf/upper avoid an extra allocation for uppercasing, but the
+	// conversion to string here still allocates for each lookup because
+	// sqlKeywords is a map keyed by string. This allocation is currently
+	// unavoidable without changing the map's key type.
+	if val, ok := sqlKeywords[string(fp)]; ok {
+		return val == sqliTokenTypeFingerprint
+	}
+	return false
 }
 
 // Given a positive match for a pattern (i.e. pattern is SQLi), this function
