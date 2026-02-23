@@ -107,12 +107,20 @@ func isMysqlComment(s string, pos int) bool {
 	return true
 }
 
-func toUpperCmp(a, b string) bool {
-	return a == strings.ToUpper(b)
-}
-
-func isKeyword(key string) byte {
-	return searchKeyword(key, sqlKeywords)
+func toUpperCmp(upper, s string) bool {
+	if len(upper) != len(s) {
+		return false
+	}
+	for i := 0; i < len(upper); i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' {
+			c -= 0x20
+		}
+		if upper[i] != c {
+			return false
+		}
+	}
+	return true
 }
 
 func searchKeyword(key string, keywords map[string]byte) byte {
