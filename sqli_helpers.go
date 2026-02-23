@@ -107,16 +107,16 @@ func isMysqlComment(s string, pos int) bool {
 	return true
 }
 
-func toUpperCmp(upper, s string) bool {
-	if len(upper) != len(s) {
+func toUpperCmp(expectedUpper, s string) bool {
+	if len(expectedUpper) != len(s) {
 		return false
 	}
-	for i := 0; i < len(upper); i++ {
+	for i := 0; i < len(expectedUpper); i++ {
 		c := s[i]
 		if c >= 'a' && c <= 'z' {
 			c -= 0x20
 		}
-		if upper[i] != c {
+		if expectedUpper[i] != c {
 			return false
 		}
 	}

@@ -681,6 +681,10 @@ func (s *sqliState) blacklist() bool {
 		upper[i] = ch
 	}
 	fp := buf[:length+1]
+	// Note: buf/upper avoid an extra allocation for uppercasing, but the
+	// conversion to string here still allocates for each lookup because
+	// sqlKeywords is a map keyed by string. This allocation is currently
+	// unavoidable without changing the map's key type.
 	if val, ok := sqlKeywords[string(fp)]; ok {
 		return val == sqliTokenTypeFingerprint
 	}
