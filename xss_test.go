@@ -124,7 +124,7 @@ func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 		}
 	case html5:
 		h5 := new(h5State)
-		h5.init(data["--INPUT--"], html5FlagsDataState)
+		h5.init(data[sectionInput], html5FlagsDataState)
 
 		for h5.next() {
 			actual += printHTML5Token(h5) + "\n"
@@ -132,9 +132,9 @@ func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 	}
 
 	actual = strings.TrimSpace(actual)
-	if actual != data["--EXPECTED--"] {
+	if actual != data[sectionExpected] {
 		t.Errorf("FILE: (%s)\nINPUT: (%s)\nEXPECTED: (%s)\nGOT: (%s)\n",
-			filename, data["--INPUT--"], data["--EXPECTED--"], actual)
+			filename, data[sectionInput], data[sectionExpected], actual)
 	}
 }
 

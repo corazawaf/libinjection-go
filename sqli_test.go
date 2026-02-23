@@ -2,7 +2,6 @@ package libinjection
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +20,12 @@ const (
 	fingerprints = "fingerprints"
 	folding      = "folding"
 	tokens       = "tokens"
+
+	sectionTest     = "--TEST--"
+	sectionInput    = "--INPUT--"
+	sectionExpected = "--EXPECTED--"
+
+	whitespace = " \t\n\r"
 )
 
 func printTokenString(t *sqliToken) string {
@@ -53,7 +58,7 @@ func printToken(t *sqliToken) string {
 	default:
 		out += string(t.val[:t.len])
 	}
-	return strings.TrimSpace(out)
+	return strings.TrimRight(out, "\n\r")
 }
 
 func getToken(state *sqliState, i int) *sqliToken {
@@ -63,6 +68,9 @@ func getToken(state *sqliState, i int) *sqliToken {
 	return &state.tokenVec[i]
 }
 
+// sections defines the expected order of test file sections.
+var sections = [3]string{sectionTest, sectionInput, sectionExpected}
+
 func readTestData(filename string) map[string]string {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -70,32 +78,38 @@ func readTestData(filename string) map[string]string {
 	}
 	defer f.Close()
 
-	var (
-		data  = make(map[string]string)
-		state = ""
-	)
+	data := make(map[string]string)
+	count := 0
+	state := ""
 
 	br := bufio.NewReaderSize(f, 8192)
 	for {
 		line, _, err := br.ReadLine()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				panic(err)
-			}
+			panic(err)
 		}
 
-		str := string(bytes.TrimSpace(line))
-		if str == "--TEST--" || str == "--INPUT--" || str == "--EXPECTED--" {
-			state = str
-		} else {
-			data[state] += str + "\n"
+		str := string(line)
+		if count < len(sections) && strings.TrimSpace(str) == sections[count] {
+			state = sections[count]
+			count++
+			continue
 		}
+		if state == "" {
+			panic(fmt.Sprintf("readTestData: unexpected content before first section in %s", filename))
+		}
+		data[state] += str + "\n"
 	}
-	data["--TEST--"] = strings.TrimSpace(data["--TEST--"])
-	data["--INPUT--"] = strings.TrimSpace(data["--INPUT--"])
-	data["--EXPECTED--"] = strings.TrimSpace(data["--EXPECTED--"])
+	if count != len(sections) {
+		panic(fmt.Sprintf("readTestData: missing sections in %s (got %d/%d)", filename, count, len(sections)))
+	}
+	// Right-trim only (matching C's modp_rtrim), not left-trim
+	for _, s := range sections {
+		data[s] = strings.TrimRight(data[s], whitespace)
+	}
 	return data
 }
 
@@ -107,11 +121,11 @@ func runSQLiTest(t testing.TB, data map[string]string, filename string, flag str
 		state  = new(sqliState)
 	)
 
-	sqliInit(state, data["--INPUT--"], sqliFlag)
+	sqliInit(state, data[sectionInput], sqliFlag)
 
 	switch flag {
 	case fingerprints:
-		result, fingerprints := IsSQLi(data["--INPUT--"])
+		result, fingerprints := IsSQLi(data[sectionInput])
 		if result {
 			actual = string(fingerprints[:])
 		}
@@ -129,9 +143,9 @@ func runSQLiTest(t testing.TB, data map[string]string, filename string, flag str
 	}
 
 	actual = strings.TrimSpace(actual)
-	if actual != data["--EXPECTED--"] {
+	if actual != data[sectionExpected] {
 		t.Errorf("FILE: (%s)\nINPUT: (%s)\nEXPECTED: (%s)\nGOT: (%s)\n",
-			filename, data["--INPUT--"], data["--EXPECTED--"], actual)
+			filename, data[sectionInput], data[sectionExpected], actual)
 	}
 }
 
