@@ -188,7 +188,7 @@ func (h *h5State) stateMarkupDeclarationOpen() bool {
 	remaining := h.len - h.pos
 	switch {
 	case remaining >= 7 &&
-		strings.ToLower(h.s[h.pos:h.pos+7]) == "doctype":
+		asciiEqualFold(h.s[h.pos:h.pos+7], "doctype"):
 		return h.stateDoctype()
 	case remaining >= 7 &&
 		h.s[h.pos:h.pos+7] == "[CDATA[":

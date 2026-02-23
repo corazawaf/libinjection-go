@@ -4,8 +4,62 @@ import (
 	"strings"
 )
 
+// maxNormalizedTokenLen is the stack buffer size for uppercased, null-stripped
+// tag and attribute names. Must exceed the longest blacklisted name
+// (currently "ON" + "WEBKITCURRENTPLAYBACKTARGETISWIRELESSCHANGED" = 48).
+const maxNormalizedTokenLen = 64
+
 func isH5White(ch byte) bool {
 	return ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == ' '
+}
+
+// asciiEqualFold compares two equal-length ASCII strings case-insensitively
+// without allocating.
+func asciiEqualFold(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		ca, cb := a[i], b[i]
+		if ca >= 'A' && ca <= 'Z' {
+			ca += 0x20
+		}
+		if cb >= 'A' && cb <= 'Z' {
+			cb += 0x20
+		}
+		if ca != cb {
+			return false
+		}
+	}
+	return true
+}
+
+// upperRemoveNulls normalizes s into buf: uppercases ASCII and removes null bytes.
+// Returns the number of bytes written and whether the input was truncated.
+// Truncation occurs when the number of non-null bytes in s exceeds len(buf)
+// (maxNormalizedTokenLen = 64). Any bytes beyond that limit are silently dropped.
+// Since all blacklisted tag/attribute names are at most 48 bytes, truncation does
+// not affect detection accuracy for any name currently in the blacklist; however,
+// callers should check the truncated return value to avoid false negatives if the
+// blacklist grows beyond 64 bytes in the future, or to skip further checks when
+// a clearly over-length token cannot possibly match.
+func upperRemoveNulls(buf []byte, s string) (n int, truncated bool) {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == 0 {
+			continue
+		}
+		if n == len(buf) {
+			truncated = true
+			break
+		}
+		if c >= 'a' && c <= 'z' {
+			c -= 0x20
+		}
+		buf[n] = c
+		n++
+	}
+	return n, truncated
 }
 
 func isBlackTag(s string) bool {
@@ -13,16 +67,23 @@ func isBlackTag(s string) bool {
 		return false
 	}
 
-	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
+	var buf [maxNormalizedTokenLen]byte
+	n, truncated := upperRemoveNulls(buf[:], s)
+	if truncated {
+		// Input is longer than any blacklisted tag name; cannot match.
+		return false
+	}
+	normalized := buf[:n]
+
 	for i := 0; i < len(blackTags); i++ {
-		if sUpperWithoutNulls == blackTags[i] {
+		if string(normalized) == blackTags[i] {
 			return true
 		}
 	}
 
 	// anything SVG or XSL(t) related (prefix match on first 3 chars)
-	if strings.HasPrefix(sUpperWithoutNulls, "SVG") ||
-		strings.HasPrefix(sUpperWithoutNulls, "XSL") {
+	if n >= 3 && ((normalized[0] == 'S' && normalized[1] == 'V' && normalized[2] == 'G') ||
+		(normalized[0] == 'X' && normalized[1] == 'S' && normalized[2] == 'L')) {
 		return true
 	}
 
@@ -30,23 +91,29 @@ func isBlackTag(s string) bool {
 }
 
 func isBlackAttr(s string) int {
-	sUpperWithoutNulls := strings.ToUpper(strings.ReplaceAll(s, "\x00", ""))
-
-	length := len(sUpperWithoutNulls)
-	if length < 2 {
+	var buf [maxNormalizedTokenLen]byte
+	n, truncated := upperRemoveNulls(buf[:], s)
+	if truncated {
+		// Input is longer than any blacklisted attribute name; cannot match.
 		return attributeTypeNone
 	}
-	if length >= 5 {
-		if sUpperWithoutNulls == "XMLNS" || sUpperWithoutNulls == "XLINK" {
+
+	if n < 2 {
+		return attributeTypeNone
+	}
+	normalized := buf[:n]
+
+	if n >= 5 {
+		if string(normalized) == "XMLNS" || string(normalized) == "XLINK" {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
 		}
 		// JavaScript on.* event handlers
-		if sUpperWithoutNulls[:2] == "ON" {
-			eventName := sUpperWithoutNulls[2:]
+		if buf[0] == 'O' && buf[1] == 'N' {
+			eventName := buf[2:n]
 			// got javascript on- attribute name
 			for _, event := range blackEvents {
-				if eventName == event.name {
+				if string(eventName) == event.name {
 					return event.attributeType
 				}
 			}
@@ -54,7 +121,7 @@ func isBlackAttr(s string) int {
 	}
 
 	for _, black := range blacks {
-		if sUpperWithoutNulls == black.name {
+		if string(normalized) == black.name {
 			// got banner attribute name
 			return black.attributeType
 		}
@@ -141,9 +208,9 @@ func htmlDecodeByteAt(s string) (int, int) {
 func htmlEncodeStartsWith(a, b string) bool {
 	var (
 		first  = true
-		bs     []byte
 		pos    = 0
 		length = len(b)
+		ai     = 0
 	)
 
 	for length > 0 {
@@ -166,10 +233,19 @@ func htmlEncodeStartsWith(a, b string) bool {
 			cb -= 0x20
 		}
 		// Mask to 8 bits to match C's implicit char truncation behavior.
-		bs = append(bs, byte(cb&0xFF))
+		ch := byte(cb & 0xFF)
+
+		if ai >= len(a) {
+			// already matched the full prefix
+			return true
+		}
+		if ch != a[ai] {
+			return false
+		}
+		ai++
 	}
 
-	return strings.HasPrefix(string(bs), a)
+	return ai >= len(a)
 }
 
 func isBlackURL(s string) bool {

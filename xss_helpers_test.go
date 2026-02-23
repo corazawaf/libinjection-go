@@ -1,6 +1,7 @@
 package libinjection
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -33,6 +34,11 @@ func TestIsBlackAttr(t *testing.T) {
 		{
 			name: "Test with long null attribute that will be stripped",
 			attr: "a\x00\x00\x00\x00\x00",
+			want: attributeTypeNone,
+		},
+		{
+			name: "over-length attribute cannot match",
+			attr: "onclick" + strings.Repeat("x", maxNormalizedTokenLen), // 7+64 = 71 bytes > maxNormalizedTokenLen
 			want: attributeTypeNone,
 		},
 	}
@@ -108,6 +114,8 @@ func TestIsBlackTag(t *testing.T) {
 		{name: "div tag", tag: "div", want: false},
 		{name: "span tag", tag: "span", want: false},
 		{name: "too short", tag: "sv", want: false},
+		{name: "over-length tag cannot match", tag: "script" + strings.Repeat("x", maxNormalizedTokenLen), want: false},          // 6+64 = 70 bytes > maxNormalizedTokenLen
+		{name: "over-length SVG prefix cannot match via prefix rule", tag: "svg" + strings.Repeat("x", maxNormalizedTokenLen), want: false}, // 3+64 = 67 bytes > maxNormalizedTokenLen
 	}
 
 	for _, tt := range tests {

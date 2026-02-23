@@ -59,21 +59,24 @@ func isXSS(input string, flags int) bool {
 			// IE conditional comment
 			if h5.tokenLen > 3 {
 				if h5.tokenStart[0] == '[' &&
-					strings.ToUpper(h5.tokenStart[1:3]) == "IF" {
+					(h5.tokenStart[1] == 'I' || h5.tokenStart[1] == 'i') &&
+					(h5.tokenStart[2] == 'F' || h5.tokenStart[2] == 'f') {
 					return true
 				}
 
-				if strings.ToUpper(h5.tokenStart[0:3]) == "XML" {
+				if (h5.tokenStart[0] == 'X' || h5.tokenStart[0] == 'x') &&
+					(h5.tokenStart[1] == 'M' || h5.tokenStart[1] == 'm') &&
+					(h5.tokenStart[2] == 'L' || h5.tokenStart[2] == 'l') {
 					return true
 				}
 			}
 
 			if h5.tokenLen > 5 {
-				upperTokenStart := strings.ToUpper(strings.ReplaceAll(h5.tokenStart[:6], "\x00", ""))
+				var buf [6]byte
+				n, _ := upperRemoveNulls(buf[:], h5.tokenStart[:6])
 
 				// IE <?import pseudo-tag or XML Entity definition
-				if upperTokenStart == "IMPORT" ||
-					upperTokenStart == "ENTITY" {
+				if n == 6 && (string(buf[:6]) == "IMPORT" || string(buf[:6]) == "ENTITY") {
 					return true
 				}
 			}
