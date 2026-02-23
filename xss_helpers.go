@@ -68,7 +68,8 @@ func isBlackTag(s string) bool {
 	}
 
 	// anything SVG or XSL(t) related (prefix match on first 3 chars)
-	if n >= 3 && (string(normalized[:3]) == "SVG" || string(normalized[:3]) == "XSL") {
+	if n >= 3 && ((normalized[0] == 'S' && normalized[1] == 'V' && normalized[2] == 'G') ||
+		(normalized[0] == 'X' && normalized[1] == 'S' && normalized[2] == 'L')) {
 		return true
 	}
 
