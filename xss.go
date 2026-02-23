@@ -73,7 +73,7 @@ func isXSS(input string, flags int) bool {
 
 			if h5.tokenLen > 5 {
 				var buf [6]byte
-				n := upperRemoveNulls(buf[:], h5.tokenStart[:6])
+				n, _ := upperRemoveNulls(buf[:], h5.tokenStart[:6])
 
 				// IE <?import pseudo-tag or XML Entity definition
 				if n == 6 && (string(buf[:6]) == "IMPORT" || string(buf[:6]) == "ENTITY") {
