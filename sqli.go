@@ -225,14 +225,8 @@ func (s *sqliState) fold() int {
 					s.tokenVec[2].category == sqliTokenTypeOperator &&
 					s.tokenVec[3].category == sqliTokenTypeLeftParenthesis &&
 					s.tokenVec[4].category == sqliTokenTypeBareWord) {
-				if pos > maxTokens {
-					s.tokenVec[1] = s.tokenVec[5]
-					pos = 2
-					left = 0
-				} else {
-					pos = 1
-					left = 0
-				}
+				pos = 1
+				left = 0
 			}
 		}
 

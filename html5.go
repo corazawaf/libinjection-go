@@ -499,7 +499,11 @@ func (h *h5State) stateAttributeName() bool {
 }
 
 func (h *h5State) stateBeforeAttributeName() bool {
-	for h.pos < h.len {
+	// The loop is intentionally unbounded: skipWhite advances h.pos and returns
+	// byteEOF when h.pos >= h.len, which is handled by case byteEOF below.
+	// Every other switch branch either returns or continues back to skipWhite,
+	// ensuring the loop always terminates.
+	for {
 		ch := h.skipWhite()
 		switch ch {
 		case byteEOF:
@@ -527,7 +531,6 @@ func (h *h5State) stateBeforeAttributeName() bool {
 			return h.stateAttributeName()
 		}
 	}
-	return false
 }
 
 // 12.2.4.41
