@@ -106,8 +106,9 @@ func TestStateCommentEOFAfterDashNull(t *testing.T) {
 func TestStateEndTagOpenEOF(t *testing.T) {
 	// "</": stateTagOpen increments h.pos past '/', then stateEndTagOpen finds EOF.
 	tokens := nextTokens("</", html5FlagsDataState)
-	// The only result is false (no token), so len(tokens)==0 is expected here.
-	_ = tokens
+	if len(tokens) != 0 {
+		t.Fatalf("expected no tokens for EOF after '</', got %d", len(tokens))
+	}
 }
 
 // TestStateEndTagOpenGT exercises the stateData() call in stateEndTagOpen when
@@ -153,13 +154,24 @@ func TestStateTagOpenDefaultNonZeroPos(t *testing.T) {
 // h.pos == 0, which calls stateData directly.
 func TestStateTagOpenDefaultZeroPos(t *testing.T) {
 	// Construct an h5State that starts directly in stateTagOpen with pos=0.
+	// The first character '1' is not '!', '/', '?', '%', a letter, or null,
+	// so the default branch fires. With h.pos == 0 it delegates to stateData().
 	h := &h5State{}
 	h.s = "1foo"
 	h.len = 4
 	h.pos = 0
 	h.state = h.stateTagOpen
-	h.next()
-	// No panic means the branch was executed.
+
+	result := h.next()
+	if !result {
+		t.Fatal("expected h.next() to return true")
+	}
+	if h.tokenType != html5TypeDataText {
+		t.Fatalf("expected html5TypeDataText token, got %d", h.tokenType)
+	}
+	if h.tokenLen == 0 {
+		t.Fatal("expected non-empty token")
+	}
 }
 
 // TestStateAfterAttributeNameEOF exercises the byteEOF path in stateAfterAttributeName.

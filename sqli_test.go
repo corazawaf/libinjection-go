@@ -293,8 +293,12 @@ func TestParseBStringEarlyReturn(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// IsSQLi exercises parseBString internally; we only check it doesn't panic.
-			IsSQLi(tt.input)
+			// IsSQLi exercises parseBString internally; verify these inputs are
+			// not classified as SQLi (i.e., early-return / fallback behavior is sane).
+			got, fingerprint := IsSQLi(tt.input)
+			if got {
+				t.Errorf("IsSQLi(%q) = true, fingerprint=%q; want false", tt.input, fingerprint)
+			}
 		})
 	}
 }
@@ -303,19 +307,25 @@ func TestParseBStringEarlyReturn(t *testing.T) {
 // parseQStringCore and the ch < 33 early-return case.
 func TestParseQStringCoreDelimiters(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
+		name     string
+		input    string
+		wantSQLi bool
 	}{
-		{name: "Q-string with brace delimiter", input: "Q'{hello}'"},
-		{name: "Q-string with angle-bracket delimiter", input: "Q'<hello>'"},
-		{name: "q-string with brace delimiter", input: "q'{hello}'"},
-		{name: "q-string with angle-bracket delimiter", input: "q'<hello>'"},
-		// ch < 33: Q' followed by a control character (ASCII < 33) returns parseWord
-		{name: "Q-string with control-char delimiter", input: "Q'\x01hello'"},
+		// { delimiter maps to }; not detected as SQLi
+		{name: "Q-string with brace delimiter", input: "Q'{hello}'", wantSQLi: false},
+		// < delimiter maps to >; in single-quote mode the token boundary makes it look like "sos"
+		{name: "Q-string with angle-bracket delimiter", input: "Q'<hello>'", wantSQLi: true},
+		{name: "q-string with brace delimiter", input: "q'{hello}'", wantSQLi: false},
+		{name: "q-string with angle-bracket delimiter", input: "q'<hello>'", wantSQLi: true},
+		// ch < 33: Q' followed by a control character (ASCII < 33) falls back to parseWord
+		{name: "Q-string with control-char delimiter", input: "Q'\x01hello'", wantSQLi: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			IsSQLi(tt.input)
+			got, fingerprint := IsSQLi(tt.input)
+			if got != tt.wantSQLi {
+				t.Errorf("IsSQLi(%q) = %v (fingerprint=%q), want %v", tt.input, got, fingerprint, tt.wantSQLi)
+			}
 		})
 	}
 }
@@ -356,7 +366,7 @@ func TestNotWhitelistDirectState(t *testing.T) {
 	//   - tokenVec[1] is a block-style comment (val starts with '/')
 	//   - statsTokens == 2 (no folding)
 	// The char at s.input[1] is '-', which bypasses the '/' and whitespace checks
-	// and reaches the '-- comment' check (lines 778-779) or final return false (782).
+	// and reaches the double-dash check or the final return-false path.
 	makeState := func(input string) *sqliState {
 		s := new(sqliState)
 		sqliInit(s, input, sqliFlagQuoteNone|sqliFlagSQLAnsi)
@@ -370,16 +380,16 @@ func TestNotWhitelistDirectState(t *testing.T) {
 		return s
 	}
 
-	t.Run("dash-dash comment (line 778-779)", func(t *testing.T) {
-		// input[1]='-', input[2]='-': ch=='-' && next=='-' → return true
+	t.Run("double-dash pattern is SQLi", func(t *testing.T) {
+		// input[1]=='-' and input[2]=='-': ch=='-' and next=='-' → return true
 		s := makeState("1--")
 		if !s.notWhitelist() {
 			t.Error("expected notWhitelist to return true for dash-dash pattern")
 		}
 	})
 
-	t.Run("dash non-dash (line 782)", func(t *testing.T) {
-		// input[1]='-', input[2]='/': ch=='-' && next!='=' → fall through to return false
+	t.Run("single-dash followed by non-dash is not SQLi", func(t *testing.T) {
+		// input[1]=='-' and input[2]!='-': ch=='-' but next!='-' → return false
 		s := makeState("1-/")
 		if s.notWhitelist() {
 			t.Error("expected notWhitelist to return false for non-SQLi pattern")
