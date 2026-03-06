@@ -62,9 +62,31 @@ func TestIsXSS(t *testing.T) {
 		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
 		{input: "onY29va2llcw==", isXSS: false}, // base64 encoded "thisisacookie", prefixed by "on"
+		// stateTagOpen EOF path (single '<')
+		{input: "<", isXSS: false},
 		// False positives from issue #46 - URLs containing black scheme names in path
 		{input: `=<a href="https://data">`, isXSS: false},
 		{input: `<a href="https://github.com/Simbiat/database">`, isXSS: false},
+		// DOCTYPE triggers detection
+		{input: "<!DOCTYPE html>", isXSS: true},
+		// style attribute (attributeTypeStyle) triggers detection
+		{input: `<div style="color:red">`, isXSS: true},
+		// filter attribute (attributeTypeStyle) triggers detection
+		{input: `<div filter="alpha">`, isXSS: true},
+		// ATTRIBUTENAME attribute (attributeTypeAttrIndirect) with black attr value triggers detection
+		{input: `<div attributename="onclick">`, isXSS: true},
+		// ATTRIBUTENAME with non-black attr value does not trigger
+		{input: `<div attributename="class">`, isXSS: false},
+		// IE conditional comment [IF
+		{input: "<!--[IF IE]>foo<![endif]-->", isXSS: true},
+		// IE conditional comment [if (lowercase)
+		{input: "<!--[if IE]>foo<![endif]-->", isXSS: true},
+		// backtick in comment
+		{input: "<!--`foo`-->", isXSS: true},
+		// IMPORT comment
+		{input: "<!--IMPORT resource.htc-->", isXSS: true},
+		// ENTITY comment
+		{input: "<!--ENTITY foo bar-->", isXSS: true},
 	}
 
 	for _, example := range examples {

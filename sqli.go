@@ -225,10 +225,13 @@ func (s *sqliState) fold() int {
 					s.tokenVec[2].category == sqliTokenTypeOperator &&
 					s.tokenVec[3].category == sqliTokenTypeLeftParenthesis &&
 					s.tokenVec[4].category == sqliTokenTypeBareWord) {
+				// If we've already read an extra token beyond maxTokens,
+				// preserve it by moving it into position 1; otherwise,
+				// just reset to start from tokenVec[0] again.
 				if pos > maxTokens {
-					s.tokenVec[1] = s.tokenVec[5]
+					s.tokenVec[1] = s.tokenVec[maxTokens]
+					left = 1
 					pos = 2
-					left = 0
 				} else {
 					pos = 1
 					left = 0

@@ -5,6 +5,64 @@ import (
 	"testing"
 )
 
+func TestAsciiEqualFold(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b string
+		want bool
+	}{
+		{name: "equal length, exact match", a: "doctype", b: "doctype", want: true},
+		{name: "equal length, a uppercase", a: "DOCTYPE", b: "doctype", want: true},
+		{name: "equal length, b uppercase", a: "doctype", b: "DOCTYPE", want: true},
+		{name: "equal length, mismatch", a: "data", b: "date", want: false},
+		{name: "different length", a: "data", b: "dat", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := asciiEqualFold(tt.a, tt.b); got != tt.want {
+				t.Errorf("asciiEqualFold(%q, %q) = %v, want %v", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHtmlDecodeByteAt(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		wantVal      int
+		wantConsumed int
+	}{
+		{name: "empty string", input: "", wantVal: byteEOF, wantConsumed: 0},
+		{name: "regular char", input: "a", wantVal: 'a', wantConsumed: 1},
+		{name: "ampersand only", input: "&", wantVal: '&', wantConsumed: 1},
+		{name: "ampersand with non-hash", input: "&a", wantVal: '&', wantConsumed: 1},
+		{name: "&#  too short", input: "&#", wantVal: '&', wantConsumed: 1},
+		{name: "&#non-digit", input: "&#a", wantVal: '&', wantConsumed: 1},
+		{name: "decimal no terminator", input: "&#5", wantVal: 5, wantConsumed: 3},
+		{name: "decimal semicolon", input: "&#5;", wantVal: 5, wantConsumed: 4},
+		{name: "decimal non-digit terminator", input: "&#5a", wantVal: 5, wantConsumed: 3},
+		{name: "decimal overflow", input: "&#9999999", wantVal: '&', wantConsumed: 1},
+		{name: "hex &#x too short", input: "&#x", wantVal: '&', wantConsumed: 1},
+		{name: "hex uppercase X too short", input: "&#X", wantVal: '&', wantConsumed: 1},
+		{name: "hex invalid char", input: "&#xG", wantVal: '&', wantConsumed: 1},
+		{name: "hex no terminator", input: "&#x5", wantVal: 5, wantConsumed: 4},
+		{name: "hex semicolon", input: "&#x5;", wantVal: 5, wantConsumed: 5},
+		{name: "hex uppercase X valid", input: "&#X5", wantVal: 5, wantConsumed: 4},
+		{name: "hex non-hex terminator", input: "&#x5G", wantVal: 5, wantConsumed: 4},
+		{name: "hex overflow", input: "&#x1000FF5", wantVal: '&', wantConsumed: 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotVal, gotConsumed := htmlDecodeByteAt(tt.input)
+			if gotVal != tt.wantVal || gotConsumed != tt.wantConsumed {
+				t.Errorf("htmlDecodeByteAt(%q) = (%d, %d), want (%d, %d)",
+					tt.input, gotVal, gotConsumed, tt.wantVal, tt.wantConsumed)
+			}
+		})
+	}
+}
+
 func TestIsBlackAttr(t *testing.T) {
 	tests := []struct {
 		name string
@@ -64,6 +122,10 @@ func TestHtmlEncodeStartsWith(t *testing.T) {
 		{name: "no match", prefix: "DATA", input: "https://example.com", want: false},
 		{name: "pattern in middle should not match", prefix: "DATA", input: "https://github.com/Simbiat/database", want: false},
 		{name: "pattern at end should not match", prefix: "DATA", input: "nodata", want: false},
+		{name: "leading whitespace skipped", prefix: "DATA", input: "\tdata:", want: true},
+		{name: "embedded null ignored", prefix: "DATA", input: "d\x00ata:", want: true},
+		{name: "embedded LF ignored", prefix: "DATA", input: "d\nata:", want: true},
+		{name: "input shorter than prefix", prefix: "DATA", input: "dat", want: false},
 	}
 
 	for _, tt := range tests {
