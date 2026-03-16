@@ -1,7 +1,8 @@
 name: Test and coverage
 
-on: 
+on:
   pull_request:
+    branches: [main]
     paths-ignore:
       - "**/*.md"
       - "LICENSE"
@@ -10,9 +11,13 @@ on:
       - "**/*.md"
       - "LICENSE"
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -23,4 +28,4 @@ jobs:
       - name: Run coverage
         run: go test -race -coverprofile=coverage.txt -covermode=atomic
       - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5

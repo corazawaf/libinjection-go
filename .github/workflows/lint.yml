@@ -1,5 +1,7 @@
 name: lint (pre-commit)
 
+permissions: {}
+
 on:
   pull_request:
     branches:
@@ -17,6 +19,8 @@ on:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
     - name: Install Go
       uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
