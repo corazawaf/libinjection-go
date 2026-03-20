@@ -246,3 +246,153 @@ func BenchmarkSQLiDriver(b *testing.B) {
 		}
 	})
 }
+
+// TestFlag2Delimiter exercises all three return paths of flag2Delimiter.
+func TestFlag2Delimiter(t *testing.T) {
+	tests := []struct {
+		name string
+		flag int
+		want byte
+	}{
+		{name: "single quote flag", flag: sqliFlagQuoteSingle, want: byteSingle},
+		{name: "double quote flag", flag: sqliFlagQuoteDouble, want: byteDouble},
+		{name: "no quote flag", flag: sqliFlagQuoteNone, want: byteNull},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := flag2Delimiter(tt.flag); got != tt.want {
+				t.Errorf("flag2Delimiter(%d) = %v, want %v", tt.flag, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestResetWithZeroFlags exercises the flags==0 branch in reset.
+func TestResetWithZeroFlags(t *testing.T) {
+	s := new(sqliState)
+	sqliInit(s, "SELECT 1", sqliFlagQuoteNone|sqliFlagSQLAnsi)
+	// Calling reset(0) should default to sqliFlagQuoteNone | sqliFlagSQLAnsi.
+	s.reset(0)
+	if s.flags != sqliFlagQuoteNone|sqliFlagSQLAnsi {
+		t.Errorf("reset(0) flags = %d, want %d", s.flags, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+	}
+}
+
+// TestParseBStringEarlyReturn exercises the early-return branches in
+// parseBString.
+func TestParseBStringEarlyReturn(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		// First early return: fewer than 3 chars or second byte is not a single quote.
+		{name: "B with no following quote", input: "SELECT B0101"},
+		{name: "b at end of input", input: "SELECT b"},
+		// Second early return: B' followed by binary digits that are not closed by '.
+		{name: "b-string unclosed with non-binary char", input: "b'0x"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// IsSQLi exercises parseBString internally; verify these inputs are
+			// not classified as SQLi (i.e., early-return / fallback behavior is sane).
+			got, fingerprint := IsSQLi(tt.input)
+			if got {
+				t.Errorf("IsSQLi(%q) = true, fingerprint=%q; want false", tt.input, fingerprint)
+			}
+		})
+	}
+}
+
+// TestParseQStringCoreDelimiters exercises the { and < delimiter cases in
+// parseQStringCore and the ch < 33 early-return case.
+func TestParseQStringCoreDelimiters(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantSQLi bool
+	}{
+		// { delimiter maps to }; not detected as SQLi
+		{name: "Q-string with brace delimiter", input: "Q'{hello}'", wantSQLi: false},
+		// < delimiter maps to >; in single-quote mode the token boundary makes it look like "sos"
+		{name: "Q-string with angle-bracket delimiter", input: "Q'<hello>'", wantSQLi: true},
+		{name: "q-string with brace delimiter", input: "q'{hello}'", wantSQLi: false},
+		{name: "q-string with angle-bracket delimiter", input: "q'<hello>'", wantSQLi: true},
+		// ch < 33: Q' followed by a control character (ASCII < 33) falls back to parseWord
+		{name: "Q-string with control-char delimiter", input: "Q'\x01hello'", wantSQLi: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, fingerprint := IsSQLi(tt.input)
+			if got != tt.wantSQLi {
+				t.Errorf("IsSQLi(%q) = %v (fingerprint=%q), want %v", tt.input, got, fingerprint, tt.wantSQLi)
+			}
+		})
+	}
+}
+
+// TestNotWhitelistEdgeCases exercises rarely-hit branches in notWhitelist
+// to improve coverage of the false-positive-reduction logic.
+func TestNotWhitelistEdgeCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantSQLi bool
+	}{
+		// "1 UNION" with exactly 2 stats tokens should not be SQLi
+		{name: "1 union not sqli", input: "1 UNION", wantSQLi: false},
+		// sp_password in input with comment fingerprint should be SQLi
+		{name: "sp_password bypass", input: "1 -- sp_password", wantSQLi: true},
+		// "1c" fingerprint with folding (statsTokens > 2) triggers detection
+		{name: "1c with folding", input: "1+1/*comment*/", wantSQLi: true},
+		// "1c" with whitespace before block comment (ch <= 32 branch)
+		{name: "1c with whitespace before block comment", input: "1 /*comment*/", wantSQLi: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := IsSQLi(tt.input)
+			if got != tt.wantSQLi {
+				t.Errorf("IsSQLi(%q) = %v, want %v", tt.input, got, tt.wantSQLi)
+			}
+		})
+	}
+}
+
+// TestNotWhitelistDirectState exercises the rarely-reached branches in the
+// Number+Comment block of notWhitelist that cannot be triggered via IsSQLi.
+// We call notWhitelist directly with a crafted sqliState.
+func TestNotWhitelistDirectState(t *testing.T) {
+	// Construct a synthetic "1c" fingerprint state where:
+	//   - tokenVec[0] is a number of length 1
+	//   - tokenVec[1] is a block-style comment (val starts with '/')
+	//   - statsTokens == 2 (no folding)
+	// The char at s.input[1] is '-', which bypasses the '/' and whitespace checks
+	// and reaches the double-dash check or the final return-false path.
+	makeState := func(input string) *sqliState {
+		s := new(sqliState)
+		sqliInit(s, input, sqliFlagQuoteNone|sqliFlagSQLAnsi)
+		s.fingerprint = string([]byte{sqliTokenTypeNumber, sqliTokenTypeComment})
+		s.statsTokens = 2
+		s.tokenVec[0].category = sqliTokenTypeNumber
+		s.tokenVec[0].len = 1
+		s.tokenVec[1].category = sqliTokenTypeComment
+		s.tokenVec[1].val = "/"
+		s.tokenVec[1].len = 1
+		return s
+	}
+
+	t.Run("double-dash pattern is SQLi", func(t *testing.T) {
+		// input[1]=='-' and input[2]=='-': ch=='-' and next=='-' → return true
+		s := makeState("1--")
+		if !s.notWhitelist() {
+			t.Error("expected notWhitelist to return true for dash-dash pattern")
+		}
+	})
+
+	t.Run("single-dash followed by non-dash is not SQLi", func(t *testing.T) {
+		// input[1]=='-' and input[2]!='-': ch=='-' but next!='-' → return false
+		s := makeState("1-/")
+		if s.notWhitelist() {
+			t.Error("expected notWhitelist to return false for non-SQLi pattern")
+		}
+	})
+}
