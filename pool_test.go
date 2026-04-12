@@ -1,6 +1,7 @@
 package libinjection
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -100,4 +101,55 @@ func TestXSSDataStatePrefilter(t *testing.T) {
 			t.Errorf("IsXSS(%q) = true, want false (clean input, no '<')", input)
 		}
 	}
+}
+
+// TestPoolConcurrency verifies that pooled state objects are safe under
+// concurrent access. WAF deployments call IsSQLi and IsXSS from many
+// goroutines simultaneously; this test exercises that path with both attack
+// and clean inputs to catch any state leakage between goroutines.
+func TestPoolConcurrency(t *testing.T) {
+	t.Parallel()
+
+	const goroutines = 50
+	const iterations = 200
+
+	t.Run("SQLi", func(t *testing.T) {
+		t.Parallel()
+		var wg sync.WaitGroup
+		wg.Add(goroutines)
+		for range goroutines {
+			go func() {
+				defer wg.Done()
+				for range iterations {
+					if got, _ := IsSQLi(`1 UNION SELECT 1,2--`); !got {
+						t.Error("IsSQLi: expected true for attack input")
+					}
+					if got, _ := IsSQLi(`hello world`); got {
+						t.Error("IsSQLi: expected false for clean input")
+					}
+				}
+			}()
+		}
+		wg.Wait()
+	})
+
+	t.Run("XSS", func(t *testing.T) {
+		t.Parallel()
+		var wg sync.WaitGroup
+		wg.Add(goroutines)
+		for range goroutines {
+			go func() {
+				defer wg.Done()
+				for range iterations {
+					if !IsXSS(`<script>alert(1)</script>`) {
+						t.Error("IsXSS: expected true for attack input")
+					}
+					if IsXSS(`hello world`) {
+						t.Error("IsXSS: expected false for clean input")
+					}
+				}
+			}()
+		}
+		wg.Wait()
+	})
 }

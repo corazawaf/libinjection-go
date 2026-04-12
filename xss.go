@@ -9,13 +9,16 @@ var h5StatePool = sync.Pool{New: func() any { return new(h5State) }}
 
 func isXSS(input string, flags int) bool {
 	h5 := h5StatePool.Get().(*h5State)
-	defer h5StatePool.Put(h5)
+	defer func() {
+		*h5 = h5State{} // clear input/token references before returning to pool
+		h5StatePool.Put(h5)
+	}()
 	h5.init(input, flags) // full reset then re-init
 	return runXSS(h5)
 }
 
-// runXSS contains the detection loop; split out so isXSS can defer the pool
-// Put before the loop runs, keeping the fast-return paths clean.
+// runXSS contains the detection loop; it is split out so isXSS can own the
+// deferred pool Put while this function keeps the fast-return paths clean.
 func runXSS(h5 *h5State) bool {
 	attr := attributeTypeNone
 	for h5.next() {
@@ -34,61 +37,71 @@ func runXSS(h5 *h5State) bool {
 		case html5TypeAttrName:
 			attr = isBlackAttr(h5.tokenStart[:h5.tokenLen])
 		case html5TypeAttrValue:
-			// IE6,7,8 parsing works a bit differently so
-			// a whole <script> or other black tag might be hiding
-			// inside an attribute value under HTML 5 parsing
-			// See http://html5sec.org/#102
-			// to avoid doing a full reparse of the value, just
-			// look for "<".  This probably need adjusting to
-			// handle escaped characters
-			switch attr {
-			case attributeTypeNone:
-				break
-			case attributeTypeBlack:
+			if handleAttrValue(h5.tokenStart, h5.tokenLen, attr) {
 				return true
-			case attributeTypeAttrURL:
-				if isBlackURL(h5.tokenStart[:h5.tokenLen]) {
-					return true
-				}
-			case attributeTypeStyle:
-				return true
-			case attributeTypeAttrIndirect:
-				// an attribute name is specified in a _value_
-				if isBlackAttr(h5.tokenStart[:h5.tokenLen]) == attributeTypeBlack {
-					return true
-				}
 			}
 			attr = attributeTypeNone
 		case html5TypeTagComment:
-			// IE uses a "`" as a tag ending byte
-			if strings.IndexByte(h5.tokenStart[:h5.tokenLen], '`') != -1 {
+			if handleTagComment(h5.tokenStart, h5.tokenLen) {
 				return true
 			}
+		}
+	}
 
-			// IE conditional comment
-			if h5.tokenLen > 3 {
-				if h5.tokenStart[0] == '[' &&
-					(h5.tokenStart[1] == 'I' || h5.tokenStart[1] == 'i') &&
-					(h5.tokenStart[2] == 'F' || h5.tokenStart[2] == 'f') {
-					return true
-				}
+	return false
+}
 
-				if (h5.tokenStart[0] == 'X' || h5.tokenStart[0] == 'x') &&
-					(h5.tokenStart[1] == 'M' || h5.tokenStart[1] == 'm') &&
-					(h5.tokenStart[2] == 'L' || h5.tokenStart[2] == 'l') {
-					return true
-				}
-			}
+// handleAttrValue reports whether an attribute value triggers XSS detection
+// given the current attribute context (attr).
+//
+// IE6/7/8 may hide a full <script> or other black tag inside an attribute
+// value under HTML5 parsing; see http://html5sec.org/#102.
+func handleAttrValue(tokenStart string, tokenLen int, attr int) bool {
+	switch attr {
+	case attributeTypeNone:
+		return false
+	case attributeTypeBlack:
+		return true
+	case attributeTypeAttrURL:
+		return isBlackURL(tokenStart[:tokenLen])
+	case attributeTypeStyle:
+		return true
+	case attributeTypeAttrIndirect:
+		// an attribute name is specified in a _value_
+		return isBlackAttr(tokenStart[:tokenLen]) == attributeTypeBlack
+	}
+	return false
+}
 
-			if h5.tokenLen > 5 {
-				var buf [6]byte
-				n, _ := upperRemoveNulls(buf[:], h5.tokenStart[:6])
+// handleTagComment reports whether an HTML comment token triggers XSS
+// detection (IE backtick terminator, IE conditional comments, XML namespace
+// declarations, or IE import/entity pseudo-tags).
+func handleTagComment(tokenStart string, tokenLen int) bool {
+	// IE uses "`" as a tag ending byte.
+	if strings.IndexByte(tokenStart[:tokenLen], '`') != -1 {
+		return true
+	}
 
-				// IE <?import pseudo-tag or XML Entity definition
-				if n == 6 && (string(buf[:6]) == "IMPORT" || string(buf[:6]) == "ENTITY") {
-					return true
-				}
-			}
+	// IE conditional comment or XML namespace declaration.
+	if tokenLen > 3 {
+		if tokenStart[0] == '[' &&
+			(tokenStart[1] == 'I' || tokenStart[1] == 'i') &&
+			(tokenStart[2] == 'F' || tokenStart[2] == 'f') {
+			return true
+		}
+		if (tokenStart[0] == 'X' || tokenStart[0] == 'x') &&
+			(tokenStart[1] == 'M' || tokenStart[1] == 'm') &&
+			(tokenStart[2] == 'L' || tokenStart[2] == 'l') {
+			return true
+		}
+	}
+
+	// IE <?import pseudo-tag or XML Entity definition.
+	if tokenLen > 5 {
+		var buf [6]byte
+		n, _ := upperRemoveNulls(buf[:], tokenStart[:6])
+		if n == 6 && (string(buf[:6]) == "IMPORT" || string(buf[:6]) == "ENTITY") {
+			return true
 		}
 	}
 

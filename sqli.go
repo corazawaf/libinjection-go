@@ -900,11 +900,14 @@ func (s *sqliState) check() bool {
 
 var sqliStatePool = sync.Pool{New: func() any { return new(sqliState) }}
 
-// IsSQLi returns true if the input is SQLi
-// It also returns the fingerprint of the SQL Injection as []byte
+// IsSQLi returns true if the input is SQLi.
+// It also returns the fingerprint of the SQL injection as a string.
 func IsSQLi(input string) (bool, string) {
 	state := sqliStatePool.Get().(*sqliState)
-	defer sqliStatePool.Put(state)
+	defer func() {
+		*state = sqliState{} // clear input/token references before returning to pool
+		sqliStatePool.Put(state)
+	}()
 	sqliInit(state, input, 0)
 	if state.check() {
 		// state.fingerprint backing bytes come from string(buf[:]) inside
