@@ -108,23 +108,18 @@ func isBlackAttr(s string) int {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
 		}
-		// JavaScript on.* event handlers
+		// JavaScript on.* event handlers — O(1) map lookup replaces O(432) scan.
+		// Go elides the string([]byte) allocation when used solely as a map key.
 		if buf[0] == 'O' && buf[1] == 'N' {
-			eventName := buf[2:n]
-			// got javascript on- attribute name
-			for _, event := range blackEvents {
-				if string(eventName) == event.name {
-					return event.attributeType
-				}
+			if typ, ok := blackEventsMap[string(buf[2:n])]; ok {
+				return typ
 			}
 		}
 	}
 
-	for _, black := range blacks {
-		if string(normalized) == black.name {
-			// got banner attribute name
-			return black.attributeType
-		}
+	// O(1) map lookup replaces O(20) scan.
+	if typ, ok := blacksMap[string(normalized)]; ok {
+		return typ
 	}
 	return attributeTypeNone
 }

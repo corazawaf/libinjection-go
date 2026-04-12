@@ -597,6 +597,7 @@ func (h *h5State) stateAttributeValueBackQuote() bool {
 }
 
 func (h *h5State) init(input string, flags int) {
+	*h = h5State{} // full reset so pooled instances carry no stale state
 	h.s = input
 	h.len = len(input)
 
