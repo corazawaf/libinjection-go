@@ -4,9 +4,10 @@ import (
 	"testing"
 )
 
-// CRS-representative inputs: real payloads that CRS @detectSQLi and @detectXSS operators receive.
-// These come from CRS rule 942100 (@detectSQLi) and 941100 (@detectXSS) test cases.
-var sqliCRSInputs = []string{
+// sqliPayloads are representative inputs for the @detectSQLi operator — a mix
+// of attack payloads and clean traffic that reflects what a WAF processes in
+// production (CRS rules 942100 and similar).
+var sqliPayloads = []string{
 	// Classic UNION-based
 	`1 UNION SELECT username, password FROM users--`,
 	// Boolean blind
@@ -30,7 +31,9 @@ var sqliCRSInputs = []string{
 	`The quick brown fox jumps over the lazy dog near the riverbank at sunset`,
 }
 
-var xssCRSInputs = []string{
+// xssPayloads are representative inputs for the @detectXSS operator — a mix
+// of attack payloads and clean traffic (CRS rules 941100 and similar).
+var xssPayloads = []string{
 	// Script tag
 	`<script>alert(1)</script>`,
 	// Event handler
@@ -53,7 +56,7 @@ func BenchmarkIsSQLi_CRS(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for _, input := range sqliCRSInputs {
+		for _, input := range sqliPayloads {
 			IsSQLi(input)
 		}
 	}
@@ -63,7 +66,7 @@ func BenchmarkIsXSS_CRS(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for _, input := range xssCRSInputs {
+		for _, input := range xssPayloads {
 			IsXSS(input)
 		}
 	}
