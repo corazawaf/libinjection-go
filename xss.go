@@ -1,14 +1,23 @@
 package libinjection
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
+
+var h5StatePool = sync.Pool{New: func() any { return new(h5State) }}
 
 func isXSS(input string, flags int) bool {
-	var (
-		h5   = new(h5State)
-		attr = attributeTypeNone
-	)
+	h5 := h5StatePool.Get().(*h5State)
+	defer h5StatePool.Put(h5)
+	h5.init(input, flags) // full reset then re-init
+	return runXSS(h5)
+}
 
-	h5.init(input, flags)
+// runXSS contains the detection loop; split out so isXSS can defer the pool
+// Put before the loop runs, keeping the fast-return paths clean.
+func runXSS(h5 *h5State) bool {
+	attr := attributeTypeNone
 	for h5.next() {
 		if h5.tokenType != html5TypeAttrValue {
 			attr = attributeTypeNone
@@ -86,15 +95,22 @@ func isXSS(input string, flags int) bool {
 	return false
 }
 
-// IsXSS returns true if the input string contains XSS
+// IsXSS returns true if the input string contains XSS.
+//
+// Five HTML5 parse contexts are tried. The DataState context requires '<' to
+// produce any tag tokens, so it is skipped when '<' is absent — saving one
+// full state-machine pass for the common case of clean input. The four
+// attribute-value contexts can detect injection without '<' (e.g. onerror=...)
+// and always run.
 func IsXSS(input string) bool {
-	if isXSS(input, html5FlagsDataState) ||
-		isXSS(input, html5FlagsValueNoQuote) ||
+	// DataState requires '<'; skip it when absent to save one pass.
+	if strings.IndexByte(input, '<') != -1 {
+		if isXSS(input, html5FlagsDataState) {
+			return true
+		}
+	}
+	return isXSS(input, html5FlagsValueNoQuote) ||
 		isXSS(input, html5FlagsValueSingleQuote) ||
 		isXSS(input, html5FlagsValueDoubleQuote) ||
-		isXSS(input, html5FlagsValueBackQuote) {
-		return true
-	}
-
-	return false
+		isXSS(input, html5FlagsValueBackQuote)
 }
