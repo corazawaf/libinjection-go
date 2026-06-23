@@ -2,6 +2,7 @@ package libinjection
 
 import (
 	"strings"
+	"sync"
 )
 
 type sqliState struct {
@@ -897,14 +898,22 @@ func (s *sqliState) check() bool {
 	return false
 }
 
-// IsSQLi returns true if the input is SQLi
-// It also returns the fingerprint of the SQL Injection as []byte
+var sqliStatePool = sync.Pool{New: func() any { return new(sqliState) }}
+
+// IsSQLi returns true if the input is SQLi.
+// It also returns the fingerprint of the SQL injection as a string.
 func IsSQLi(input string) (bool, string) {
-	state := new(sqliState)
+	state := sqliStatePool.Get().(*sqliState)
+	defer func() {
+		*state = sqliState{} // clear input/token references before returning to pool
+		sqliStatePool.Put(state)
+	}()
 	sqliInit(state, input, 0)
-	result := state.check()
-	if result {
-		return result, state.fingerprint
+	if state.check() {
+		// state.fingerprint backing bytes come from string(buf[:]) inside
+		// sqliFingerprint — a separate heap allocation, not part of the struct.
+		// Safe to return after Put.
+		return true, state.fingerprint
 	}
-	return result, ""
+	return false, ""
 }
