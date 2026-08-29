@@ -26,29 +26,34 @@ func runXSS(h5 *h5State) bool {
 			attr = attributeTypeNone
 		}
 
-		switch h5.tokenType {
-
-		case html5TypeDocType:
+		detected, nextAttr := checkToken(h5, attr)
+		if detected {
 			return true
-		case html5TypeTagNameOpen:
-			if isBlackTag(h5.tokenStart[:h5.tokenLen]) {
-				return true
-			}
-		case html5TypeAttrName:
-			attr = isBlackAttr(h5.tokenStart[:h5.tokenLen])
-		case html5TypeAttrValue:
-			if handleAttrValue(h5.tokenStart, h5.tokenLen, attr) {
-				return true
-			}
-			attr = attributeTypeNone
-		case html5TypeTagComment:
-			if handleTagComment(h5.tokenStart, h5.tokenLen) {
-				return true
-			}
 		}
+		attr = nextAttr
 	}
 
 	return false
+}
+
+// checkToken reports whether the current token triggers XSS detection, and
+// returns the attribute context to carry into the next token. An attribute
+// name sets the context that its value is then judged against; every other
+// token type leaves the incoming context alone.
+func checkToken(h5 *h5State, attr int) (detected bool, nextAttr int) {
+	switch h5.tokenType {
+	case html5TypeDocType:
+		return true, attr
+	case html5TypeTagNameOpen:
+		return isBlackTag(h5.tokenStart[:h5.tokenLen]), attr
+	case html5TypeAttrName:
+		return false, isBlackAttr(h5.tokenStart[:h5.tokenLen])
+	case html5TypeAttrValue:
+		return handleAttrValue(h5.tokenStart, h5.tokenLen, attr), attributeTypeNone
+	case html5TypeTagComment:
+		return handleTagComment(h5.tokenStart, h5.tokenLen), attr
+	}
+	return false, attr
 }
 
 // handleAttrValue reports whether an attribute value triggers XSS detection
