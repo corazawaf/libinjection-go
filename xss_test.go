@@ -57,7 +57,7 @@ func TestIsXSS(t *testing.T) {
 		{input: "<svg onload=alert(1)>", isXSS: true},
 		{input: "<svganimate>", isXSS: true},
 		// True negatives
-		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
+		{input: "<!--xml-->", isXSS: false},   // tokenLen=3, doesn't reach XML check
 		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
 		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
@@ -137,9 +137,7 @@ func printHTML5Token(h *h5State) string {
 
 func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 	t.Helper()
-	var (
-		actual = ""
-	)
+	actual := ""
 
 	switch flag {
 	case xss:
@@ -260,6 +258,26 @@ func TestXSS(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			if want, have := tt.isXSS, IsXSS(tt.input); want != have {
 				t.Errorf("want %v, have %v", want, have)
+			}
+		})
+	}
+}
+
+// TestIsXSSEmbeddedNullsInTagComment covers IE import/entity pseudo-tags that
+// hide a NUL inside the keyword. upperRemoveNulls drops NULs, so normalizing
+// only a fixed 6-byte window pushed the keyword tail out of range.
+func TestIsXSSEmbeddedNullsInTagComment(t *testing.T) {
+	tests := []string{
+		"<?im\x00port namespace=\"t\">",
+		"<?\x00import namespace=\"t\">",
+		"<!\x00ENTITY x SYSTEM \"file:///etc/passwd\">",
+		"<!EN\x00TITY x SYSTEM \"file:///etc/passwd\">",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			if !IsXSS(tc) {
+				t.Errorf("want true, have false")
 			}
 		})
 	}

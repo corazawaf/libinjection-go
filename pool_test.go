@@ -103,6 +103,31 @@ func TestXSSDataStatePrefilter(t *testing.T) {
 	}
 }
 
+const (
+	concurrencyGoroutines = 50
+	concurrencyIterations = 200
+)
+
+// runConcurrent runs check from concurrencyGoroutines goroutines,
+// concurrencyIterations times each, as a parallel subtest named name.
+func runConcurrent(t *testing.T, name string, check func(t *testing.T)) {
+	t.Helper()
+	t.Run(name, func(t *testing.T) {
+		t.Parallel()
+		var wg sync.WaitGroup
+		wg.Add(concurrencyGoroutines)
+		for range concurrencyGoroutines {
+			go func() {
+				defer wg.Done()
+				for range concurrencyIterations {
+					check(t)
+				}
+			}()
+		}
+		wg.Wait()
+	})
+}
+
 // TestPoolConcurrency verifies that pooled state objects are safe under
 // concurrent access. WAF deployments call IsSQLi and IsXSS from many
 // goroutines simultaneously; this test exercises that path with both attack
@@ -110,46 +135,21 @@ func TestXSSDataStatePrefilter(t *testing.T) {
 func TestPoolConcurrency(t *testing.T) {
 	t.Parallel()
 
-	const goroutines = 50
-	const iterations = 200
-
-	t.Run("SQLi", func(t *testing.T) {
-		t.Parallel()
-		var wg sync.WaitGroup
-		wg.Add(goroutines)
-		for range goroutines {
-			go func() {
-				defer wg.Done()
-				for range iterations {
-					if got, _ := IsSQLi(`1 UNION SELECT 1,2--`); !got {
-						t.Error("IsSQLi: expected true for attack input")
-					}
-					if got, _ := IsSQLi(`hello world`); got {
-						t.Error("IsSQLi: expected false for clean input")
-					}
-				}
-			}()
+	runConcurrent(t, "SQLi", func(t *testing.T) {
+		if got, _ := IsSQLi(`1 UNION SELECT 1,2--`); !got {
+			t.Error("IsSQLi: expected true for attack input")
 		}
-		wg.Wait()
+		if got, _ := IsSQLi(`hello world`); got {
+			t.Error("IsSQLi: expected false for clean input")
+		}
 	})
 
-	t.Run("XSS", func(t *testing.T) {
-		t.Parallel()
-		var wg sync.WaitGroup
-		wg.Add(goroutines)
-		for range goroutines {
-			go func() {
-				defer wg.Done()
-				for range iterations {
-					if !IsXSS(`<script>alert(1)</script>`) {
-						t.Error("IsXSS: expected true for attack input")
-					}
-					if IsXSS(`hello world`) {
-						t.Error("IsXSS: expected false for clean input")
-					}
-				}
-			}()
+	runConcurrent(t, "XSS", func(t *testing.T) {
+		if !IsXSS(`<script>alert(1)</script>`) {
+			t.Error("IsXSS: expected true for attack input")
 		}
-		wg.Wait()
+		if IsXSS(`hello world`) {
+			t.Error("IsXSS: expected false for clean input")
+		}
 	})
 }

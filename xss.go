@@ -73,6 +73,15 @@ func handleAttrValue(tokenStart string, tokenLen int, attr int) bool {
 	return false
 }
 
+// hasCommentPrefix reports whether a comment token opens with an IE
+// conditional comment ("[if") or an XML namespace declaration ("xml").
+func hasCommentPrefix(token string) bool {
+	if len(token) < 4 {
+		return false
+	}
+	return strings.EqualFold(token[:3], "[if") || strings.EqualFold(token[:3], "xml")
+}
+
 // handleTagComment reports whether an HTML comment token triggers XSS
 // detection (IE backtick terminator, IE conditional comments, XML namespace
 // declarations, or IE import/entity pseudo-tags).
@@ -82,24 +91,16 @@ func handleTagComment(tokenStart string, tokenLen int) bool {
 		return true
 	}
 
-	// IE conditional comment or XML namespace declaration.
-	if tokenLen > 3 {
-		if tokenStart[0] == '[' &&
-			(tokenStart[1] == 'I' || tokenStart[1] == 'i') &&
-			(tokenStart[2] == 'F' || tokenStart[2] == 'f') {
-			return true
-		}
-		if (tokenStart[0] == 'X' || tokenStart[0] == 'x') &&
-			(tokenStart[1] == 'M' || tokenStart[1] == 'm') &&
-			(tokenStart[2] == 'L' || tokenStart[2] == 'l') {
-			return true
-		}
+	if hasCommentPrefix(tokenStart[:tokenLen]) {
+		return true
 	}
 
-	// IE <?import pseudo-tag or XML Entity definition.
+	// IE <?import pseudo-tag or XML Entity definition. The whole token is
+	// normalized, not just its first 6 bytes: upperRemoveNulls drops NULs, so
+	// an embedded NUL shifts the keyword past a fixed-width window.
 	if tokenLen > 5 {
 		var buf [6]byte
-		n, _ := upperRemoveNulls(buf[:], tokenStart[:6])
+		n, _ := upperRemoveNulls(buf[:], tokenStart[:tokenLen])
 		if n == 6 && (string(buf[:6]) == "IMPORT" || string(buf[:6]) == "ENTITY") {
 			return true
 		}
