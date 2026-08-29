@@ -84,7 +84,11 @@ func hasCommentPrefix(token string) bool {
 	if len(token) < 4 {
 		return false
 	}
-	return strings.EqualFold(token[:3], "[if") || strings.EqualFold(token[:3], "xml")
+	// ASCII case-fold: only 'I'/'i' fold to 'i', 'X'/'x' to 'x', and so on, so
+	// this matches the byte comparisons it replaces without decoding runes.
+	lower := [3]byte{token[0] | 0x20, token[1] | 0x20, token[2] | 0x20}
+	return (token[0] == '[' && lower[1] == 'i' && lower[2] == 'f') ||
+		lower == [3]byte{'x', 'm', 'l'}
 }
 
 // handleTagComment reports whether an HTML comment token triggers XSS
