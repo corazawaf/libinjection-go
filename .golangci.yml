@@ -1,0 +1,17 @@
+# golangci-lint supplies the cyclomatic-complexity gate. The pre-commit hook
+# runs it with --new-from-merge-base=main, so the limit applies to new and
+# modified functions while the pre-existing high-complexity parsing core is
+# grandfathered until someone edits it.
+#
+# Everything else (vet, revive, gosec, staticcheck, gocritic, gofumpt) is
+# already covered by its own hook in .pre-commit-config.yaml, so no default
+# linters are enabled here.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - gocyclo
+  settings:
+    gocyclo:
+      min-complexity: 8

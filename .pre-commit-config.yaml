@@ -108,12 +108,25 @@ repos:
     #
     -   id: go-staticcheck-pkg
     #
-    # StructSlop
+    # GolangCI-Lint
     #
-    #-   id: go-structslop-pkg
+    # Supplies the cyclomatic-complexity gate (see .golangci.yml).
+    # --new-from-merge-base holds new and modified functions to the limit
+    # while grandfathering the pre-existing high-complexity parsing core,
+    # so complexity can only ratchet down. Requires full history in CI
+    # (fetch-depth: 0).
+    #
+    -   id: golangci-lint-repo-mod
+        args: [--new-from-merge-base=origin/main]
     #
     # Formatters
     #
+    -   id: go-fumpt-repo
+        args: [-l, -d]
+    #
+    # StructSlop
+    #
+    #-   id: go-structslop-pkg
     #-   id: go-returns      # replaces go-imports & go-fmt
     #-   id: go-returns-repo # replaces go-imports-repo & go-fmt-repo
     #
