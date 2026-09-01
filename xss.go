@@ -2,7 +2,8 @@ package libinjection
 
 import "strings"
 
-func isXSS(input string, flags int) bool { //nolint:gocyclo // complexity 33, reduction tracked in #122
+//nolint:gocyclo // complexity 33, reduction tracked in #122
+func isXSS(input string, flags int) bool {
 	var (
 		h5   = new(h5State)
 		attr = attributeTypeNone

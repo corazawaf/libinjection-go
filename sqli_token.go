@@ -84,7 +84,8 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.val = value[:last]
 }
 
-func (t *sqliToken) isUnaryOp() bool { //nolint:gocyclo // complexity 9, reduction tracked in #122
+//nolint:gocyclo // complexity 9, reduction tracked in #122
+func (t *sqliToken) isUnaryOp() bool {
 	if t.category != sqliTokenTypeOperator {
 		return false
 	}

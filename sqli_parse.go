@@ -21,7 +21,8 @@ func parseEolComment(s *sqliState) int {
 	return s.pos + index + 1
 }
 
-func parseMoney(s *sqliState) int { //nolint:gocyclo // complexity 11, reduction tracked in #122
+//nolint:gocyclo // complexity 11, reduction tracked in #122
+func parseMoney(s *sqliState) int {
 	if s.pos+1 == s.length {
 		s.current.assign(sqliTokenTypeBareWord, s.pos, 1, "$")
 		return s.length
@@ -113,7 +114,8 @@ func parseHash(s *sqliState) int {
 	return s.pos + 1
 }
 
-func parseDash(s *sqliState) int { //nolint:gocyclo // complexity 9, reduction tracked in #122
+//nolint:gocyclo // complexity 9, reduction tracked in #122
+func parseDash(s *sqliState) int {
 	// five cases
 	// 1) --[white] this is always a SQL comment
 	// 2) --[EOL] this is a comment
@@ -282,7 +284,8 @@ func parseVar(s *sqliState) int {
 	return pos + length
 }
 
-func parseNumber(s *sqliState) int { //nolint:gocyclo // complexity 36, reduction tracked in #126
+//nolint:gocyclo // complexity 36, reduction tracked in #126
+func parseNumber(s *sqliState) int {
 	var (
 		digits  string
 		haveE   int

@@ -134,7 +134,9 @@ func (s *sqliState) sqliFingerprint(flags int) string {
 // new value is special using the PHRASES mapping.
 //
 // Example: "UNION" + "ALL" = "UNION ALL"
-func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool { //nolint:gocyclo // complexity 20, reduction tracked in #124
+//
+//nolint:gocyclo // complexity 20, reduction tracked in #124
+func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 	// first token is of right type?
 	if !(tokenA.category == sqliTokenTypeKeyword ||
 		tokenA.category == sqliTokenTypeBareWord ||
@@ -175,7 +177,9 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool { //nolint:gocyclo // 
 }
 
 // parses and folds input, up to 5 tokens
-func (s *sqliState) fold() int { //nolint:gocyclo // complexity 178, reduction tracked in #129
+//
+//nolint:gocyclo // complexity 178, reduction tracked in #129
+func (s *sqliState) fold() int {
 	var (
 		pos         = 0 // pos is the position of where whe Next token goes
 		left        = 0 // left is a count of how many tokens that are already folded or processed(i.e. part of the fingerprint)
@@ -697,7 +701,9 @@ func (s *sqliState) blacklist() bool {
 // does additional analysis to reduce false positives.
 //
 // return TRUE if SQLi, false otherwise
-func (s *sqliState) notWhitelist() bool { //nolint:gocyclo // complexity 34, reduction tracked in #127
+//
+//nolint:gocyclo // complexity 34, reduction tracked in #127
+func (s *sqliState) notWhitelist() bool {
 	// We assume we got a SQLi match
 	// This next part just helps reduce false positives
 	length := len(s.fingerprint)
@@ -852,7 +858,8 @@ func (s *sqliState) reparseAsMySQL() bool {
 	return s.statsCommentDDX != 0 || s.statsCommentHash != 0
 }
 
-func (s *sqliState) check() bool { //nolint:gocyclo // complexity 11, reduction tracked in #122
+//nolint:gocyclo // complexity 11, reduction tracked in #122
+func (s *sqliState) check() bool {
 	// no input? not SQLi
 	if s.length == 0 {
 		return false
