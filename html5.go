@@ -147,7 +147,7 @@ func (h *h5State) stateCData() bool {
 
 		// did not find anything or has less 3 chars left
 		switch {
-		case index == -1 || h.pos+index+3 > h.len:
+		case index == -1 || pos+index+3 > h.len:
 			h.state = h.stateEOF
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
