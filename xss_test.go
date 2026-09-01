@@ -265,6 +265,26 @@ func TestXSS(t *testing.T) {
 	}
 }
 
+// TestIsXSSEmbeddedNullsInTagComment covers IE import/entity pseudo-tags that
+// hide a NUL inside the keyword. upperRemoveNulls drops NULs, so normalizing
+// only a fixed 6-byte window pushed the keyword tail out of range.
+func TestIsXSSEmbeddedNullsInTagComment(t *testing.T) {
+	tests := []string{
+		"<?im\x00port namespace=\"t\">",
+		"<?\x00import namespace=\"t\">",
+		"<!\x00ENTITY x SYSTEM \"file:///etc/passwd\">",
+		"<!EN\x00TITY x SYSTEM \"file:///etc/passwd\">",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			if !IsXSS(tc) {
+				t.Errorf("want true, have false")
+			}
+		})
+	}
+}
+
 // TestIsXSSCDataBounds covers the bounds guard in stateCData.
 //
 // index is computed relative to the loop-local cursor pos, so the guard has
