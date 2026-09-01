@@ -57,7 +57,7 @@ func TestIsXSS(t *testing.T) {
 		{input: "<svg onload=alert(1)>", isXSS: true},
 		{input: "<svganimate>", isXSS: true},
 		// True negatives
-		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
+		{input: "<!--xml-->", isXSS: false},   // tokenLen=3, doesn't reach XML check
 		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
 		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
@@ -101,6 +101,7 @@ const (
 	xss   = "xss"
 )
 
+//nolint:gocyclo // complexity 11, reduction tracked in #122
 func h5TypeToString(h5Type int) string {
 	switch h5Type {
 	case html5TypeDataText:
@@ -137,9 +138,7 @@ func printHTML5Token(h *h5State) string {
 
 func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 	t.Helper()
-	var (
-		actual = ""
-	)
+	actual := ""
 
 	switch flag {
 	case xss:
@@ -192,6 +191,7 @@ type testCaseXSS struct {
 	data map[string]string
 }
 
+//nolint:gocyclo // complexity 9, reduction tracked in #122
 func BenchmarkXSSDriver(b *testing.B) {
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)

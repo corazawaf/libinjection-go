@@ -29,9 +29,8 @@ const (
 // since it's the wrong or EOL
 func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter byte) int {
 	// offset is to skip the perhaps first quote char
-	var (
-		str = s[pos+offset:]
-	)
+
+	str := s[pos+offset:]
 
 	if offset > 0 {
 		// this is real quote
@@ -85,6 +84,7 @@ func (t *sqliToken) assign(tokenType byte, pos, length int, value string) {
 	t.val = value[:last]
 }
 
+//nolint:gocyclo // complexity 9, reduction tracked in #122
 func (t *sqliToken) isUnaryOp() bool {
 	if t.category != sqliTokenTypeOperator {
 		return false
