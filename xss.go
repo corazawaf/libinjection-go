@@ -7,7 +7,6 @@ import (
 
 var h5StatePool = sync.Pool{New: func() any { return new(h5State) }}
 
-//nolint:gocyclo // complexity 33, reduction tracked in #122
 func isXSS(input string, flags int) bool {
 	h5 := h5StatePool.Get().(*h5State)
 	defer func() {

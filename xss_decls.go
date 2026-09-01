@@ -15,8 +15,10 @@ type stringType struct {
 
 // blackEventsMap and blacksMap are O(1) lookup tables built at init time from
 // the slices below. isBlackAttr uses these maps instead of linear scans.
-var blackEventsMap map[string]int
-var blacksMap map[string]int
+var (
+	blackEventsMap map[string]int
+	blacksMap      map[string]int
+)
 
 func init() {
 	blackEventsMap = make(map[string]int, len(blackEvents))
