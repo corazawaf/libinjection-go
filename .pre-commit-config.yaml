@@ -108,12 +108,25 @@ repos:
     #
     -   id: go-staticcheck-pkg
     #
-    # StructSlop
+    # GolangCI-Lint
     #
-    #-   id: go-structslop-pkg
+    # Supplies the cyclomatic-complexity gate (see .golangci.yml).
+    # The limit applies repo-wide; the functions that already exceed it carry
+    # a per-function //nolint:gocyclo naming the tracking issue. A diff-line
+    # filter was tried first and rejected: gocyclo reports at the function
+    # declaration line, so complexity added to an existing body slipped
+    # through untouched.
+    #
+    -   id: golangci-lint-repo-mod
     #
     # Formatters
     #
+    -   id: go-fumpt-repo
+        args: [-l, -d]
+    #
+    # StructSlop
+    #
+    #-   id: go-structslop-pkg
     #-   id: go-returns      # replaces go-imports & go-fmt
     #-   id: go-returns-repo # replaces go-imports-repo & go-fmt-repo
     #

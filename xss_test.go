@@ -101,6 +101,7 @@ const (
 	xss   = "xss"
 )
 
+//nolint:gocyclo // complexity 11, reduction tracked in #122
 func h5TypeToString(h5Type int) string {
 	switch h5Type {
 	case html5TypeDataText:
@@ -190,6 +191,7 @@ type testCaseXSS struct {
 	data map[string]string
 }
 
+//nolint:gocyclo // complexity 9, reduction tracked in #122
 func BenchmarkXSSDriver(b *testing.B) {
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
@@ -279,6 +281,30 @@ func TestIsXSSEmbeddedNullsInTagComment(t *testing.T) {
 			if !IsXSS(tc) {
 				t.Errorf("want true, have false")
 			}
+		})
+	}
+}
+
+// TestIsXSSCDataBounds covers the bounds guard in stateCData.
+//
+// index is computed relative to the loop-local cursor pos, so the guard has
+// to use that same cursor. It previously used h.pos, which stops advancing
+// after the first iteration, letting the dereference run past the end of the
+// input. Every input here panicked before the fix.
+func TestIsXSSCDataBounds(t *testing.T) {
+	inputs := []string{
+		"<![CDATA[]]]",
+		"<![CDATA[]]]]",
+		"<![CDATA[a]]b]]]",
+		"<![CDATA[]]",
+		"<![CDATA[]]>",
+		"<![CDATA[x]]>y",
+		"<![CDATA[]]]>",
+	}
+
+	for _, input := range inputs {
+		t.Run(input, func(t *testing.T) {
+			IsXSS(input)
 		})
 	}
 }

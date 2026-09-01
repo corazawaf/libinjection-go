@@ -79,6 +79,8 @@ func (h *h5State) stateBogusComment2() bool {
 //	1) EOF
 //	2) ending in -->
 //	3) ending in -!>
+//
+//nolint:gocyclo // complexity 11, reduction tracked in #122
 func (h *h5State) stateComment() bool {
 	pos := h.pos
 
@@ -147,7 +149,7 @@ func (h *h5State) stateCData() bool {
 
 		// did not find anything or has less 3 chars left
 		switch {
-		case index == -1 || h.pos+index+3 > h.len:
+		case index == -1 || pos+index+3 > h.len:
 			h.state = h.stateEOF
 			h.tokenStart = h.s[h.pos:]
 			h.tokenLen = h.len - h.pos
@@ -164,7 +166,6 @@ func (h *h5State) stateCData() bool {
 			pos = pos + index + 1
 		}
 	}
-
 }
 
 func (h *h5State) stateDoctype() bool {
@@ -305,6 +306,7 @@ func (h *h5State) stateEndTagOpen() bool {
 	return h.stateBogusComment()
 }
 
+//nolint:gocyclo // complexity 12, reduction tracked in #122
 func (h *h5State) stateTagOpen() bool {
 	if h.pos >= h.len {
 		return false
