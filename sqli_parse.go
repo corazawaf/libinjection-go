@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-var wordAcceptTable = buildAcceptTable(" []{}<>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r\"\240\000")
-var varAcceptTable = buildAcceptTable(" <>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r'`\"")
+var (
+	wordAcceptTable = buildAcceptTable(" []{}<>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r\"\240\000")
+	varAcceptTable  = buildAcceptTable(" <>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r'`\"")
+)
 
 func parseEolComment(s *sqliState) int {
 	index := strings.IndexByte(s.input[s.pos:], '\n')
@@ -19,6 +21,7 @@ func parseEolComment(s *sqliState) int {
 	return s.pos + index + 1
 }
 
+//nolint:gocyclo // complexity 11, reduction tracked in #122
 func parseMoney(s *sqliState) int {
 	if s.pos+1 == s.length {
 		s.current.assign(sqliTokenTypeBareWord, s.pos, 1, "$")
@@ -111,6 +114,7 @@ func parseHash(s *sqliState) int {
 	return s.pos + 1
 }
 
+//nolint:gocyclo // complexity 9, reduction tracked in #122
 func parseDash(s *sqliState) int {
 	// five cases
 	// 1) --[white] this is always a SQL comment
@@ -280,6 +284,7 @@ func parseVar(s *sqliState) int {
 	return pos + length
 }
 
+//nolint:gocyclo // complexity 36, reduction tracked in #126
 func parseNumber(s *sqliState) int {
 	var (
 		digits  string

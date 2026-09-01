@@ -62,6 +62,7 @@ func upperRemoveNulls(buf []byte, s string) (n int, truncated bool) {
 	return n, truncated
 }
 
+//nolint:gocyclo // complexity 12, reduction tracked in #122
 func isBlackTag(s string) bool {
 	if len(s) < 3 {
 		return false
@@ -90,6 +91,7 @@ func isBlackTag(s string) bool {
 	return false
 }
 
+//nolint:gocyclo // complexity 12, reduction tracked in #122
 func isBlackAttr(s string) int {
 	var buf [maxNormalizedTokenLen]byte
 	n, truncated := upperRemoveNulls(buf[:], s)
@@ -108,27 +110,23 @@ func isBlackAttr(s string) int {
 			// got xmlns or xlink tags
 			return attributeTypeBlack
 		}
-		// JavaScript on.* event handlers
+		// JavaScript on.* event handlers — O(1) map lookup replaces O(432) scan.
+		// Go elides the string([]byte) allocation when used solely as a map key.
 		if buf[0] == 'O' && buf[1] == 'N' {
-			eventName := buf[2:n]
-			// got javascript on- attribute name
-			for _, event := range blackEvents {
-				if string(eventName) == event.name {
-					return event.attributeType
-				}
+			if typ, ok := blackEventsMap[string(buf[2:n])]; ok {
+				return typ
 			}
 		}
 	}
 
-	for _, black := range blacks {
-		if string(normalized) == black.name {
-			// got banner attribute name
-			return black.attributeType
-		}
+	// O(1) map lookup replaces O(20) scan.
+	if typ, ok := blacksMap[string(normalized)]; ok {
+		return typ
 	}
 	return attributeTypeNone
 }
 
+//nolint:gocyclo // complexity 21, reduction tracked in #125
 func htmlDecodeByteAt(s string) (int, int) {
 	length := len(s)
 	val := 0
@@ -205,6 +203,8 @@ func htmlDecodeByteAt(s string) (int, int) {
 // a all uppercase c-string (null terminated), case insensitive!
 //
 // also ignore any embedded nulls in the HTML string!
+//
+//nolint:gocyclo // complexity 10, reduction tracked in #122
 func htmlEncodeStartsWith(a, b string) bool {
 	var (
 		first  = true

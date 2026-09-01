@@ -13,6 +13,22 @@ type stringType struct {
 	attributeType int
 }
 
+// blackEventsMap and blacksMap are O(1) lookup tables built at init time from
+// the slices below. isBlackAttr uses these maps instead of linear scans.
+var blackEventsMap map[string]int
+var blacksMap map[string]int
+
+func init() {
+	blackEventsMap = make(map[string]int, len(blackEvents))
+	for _, e := range blackEvents {
+		blackEventsMap[e.name] = e.attributeType
+	}
+	blacksMap = make(map[string]int, len(blacks))
+	for _, b := range blacks {
+		blacksMap[b.name] = b.attributeType
+	}
+}
+
 // Events extracted from multiple browser sources:
 //   - WebKit: https://github.com/WebKit/WebKit/blob/main/Source/WebCore/dom/EventNames.json
 //   - Chromium/Blink: https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/dom/global_event_handlers.idl

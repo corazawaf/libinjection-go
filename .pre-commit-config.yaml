@@ -35,4 +35,11 @@ repos:
       # StaticCheck
       #
       - id: go-staticcheck-pkg
-    #
+      #
+      -   id: golangci-lint-repo-mod
+      #
+      # Formatters
+      #
+      -   id: go-fumpt-repo
+          args: [-l, -d]
+      #

@@ -57,7 +57,7 @@ func TestIsXSS(t *testing.T) {
 		{input: "<svg onload=alert(1)>", isXSS: true},
 		{input: "<svganimate>", isXSS: true},
 		// True negatives
-		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
+		{input: "<!--xml-->", isXSS: false},   // tokenLen=3, doesn't reach XML check
 		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
 		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
@@ -101,6 +101,7 @@ const (
 	xss   = "xss"
 )
 
+//nolint:gocyclo // complexity 11, reduction tracked in #122
 func h5TypeToString(h5Type int) string {
 	switch h5Type {
 	case html5TypeDataText:
@@ -137,9 +138,7 @@ func printHTML5Token(h *h5State) string {
 
 func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 	t.Helper()
-	var (
-		actual = ""
-	)
+	actual := ""
 
 	switch flag {
 	case xss:
@@ -192,6 +191,7 @@ type testCaseXSS struct {
 	data map[string]string
 }
 
+//nolint:gocyclo // complexity 9, reduction tracked in #122
 func BenchmarkXSSDriver(b *testing.B) {
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
@@ -261,6 +261,50 @@ func TestXSS(t *testing.T) {
 			if want, have := tt.isXSS, IsXSS(tt.input); want != have {
 				t.Errorf("want %v, have %v", want, have)
 			}
+		})
+	}
+}
+
+// TestIsXSSEmbeddedNullsInTagComment covers IE import/entity pseudo-tags that
+// hide a NUL inside the keyword. upperRemoveNulls drops NULs, so normalizing
+// only a fixed 6-byte window pushed the keyword tail out of range.
+func TestIsXSSEmbeddedNullsInTagComment(t *testing.T) {
+	tests := []string{
+		"<?im\x00port namespace=\"t\">",
+		"<?\x00import namespace=\"t\">",
+		"<!\x00ENTITY x SYSTEM \"file:///etc/passwd\">",
+		"<!EN\x00TITY x SYSTEM \"file:///etc/passwd\">",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			if !IsXSS(tc) {
+				t.Errorf("want true, have false")
+			}
+		})
+	}
+}
+
+// TestIsXSSCDataBounds covers the bounds guard in stateCData.
+//
+// index is computed relative to the loop-local cursor pos, so the guard has
+// to use that same cursor. It previously used h.pos, which stops advancing
+// after the first iteration, letting the dereference run past the end of the
+// input. Every input here panicked before the fix.
+func TestIsXSSCDataBounds(t *testing.T) {
+	inputs := []string{
+		"<![CDATA[]]]",
+		"<![CDATA[]]]]",
+		"<![CDATA[a]]b]]]",
+		"<![CDATA[]]",
+		"<![CDATA[]]>",
+		"<![CDATA[x]]>y",
+		"<![CDATA[]]]>",
+	}
+
+	for _, input := range inputs {
+		t.Run(input, func(t *testing.T) {
+			IsXSS(input)
 		})
 	}
 }

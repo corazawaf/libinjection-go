@@ -24,7 +24,7 @@ func isBackslashEscaped(str string) bool {
 		return false
 	}
 
-	var count = 0
+	count := 0
 	for i := len(str) - 1; i >= 0; i-- {
 		if str[i] == '\\' {
 			count++
