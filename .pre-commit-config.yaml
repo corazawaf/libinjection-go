@@ -111,13 +111,13 @@ repos:
     # GolangCI-Lint
     #
     # Supplies the cyclomatic-complexity gate (see .golangci.yml).
-    # --new-from-merge-base holds new and modified functions to the limit
-    # while grandfathering the pre-existing high-complexity parsing core,
-    # so complexity can only ratchet down. Requires full history in CI
-    # (fetch-depth: 0).
+    # The limit applies repo-wide; the functions that already exceed it carry
+    # a per-function //nolint:gocyclo naming the tracking issue. A diff-line
+    # filter was tried first and rejected: gocyclo reports at the function
+    # declaration line, so complexity added to an existing body slipped
+    # through untouched.
     #
     -   id: golangci-lint-repo-mod
-        args: [--new-from-merge-base=origin/main]
     #
     # Formatters
     #

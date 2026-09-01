@@ -79,7 +79,7 @@ func (h *h5State) stateBogusComment2() bool {
 //	1) EOF
 //	2) ending in -->
 //	3) ending in -!>
-func (h *h5State) stateComment() bool {
+func (h *h5State) stateComment() bool { //nolint:gocyclo // complexity 11, reduction tracked in #122
 	pos := h.pos
 
 	for {
@@ -304,7 +304,7 @@ func (h *h5State) stateEndTagOpen() bool {
 	return h.stateBogusComment()
 }
 
-func (h *h5State) stateTagOpen() bool {
+func (h *h5State) stateTagOpen() bool { //nolint:gocyclo // complexity 12, reduction tracked in #122
 	if h.pos >= h.len {
 		return false
 	}

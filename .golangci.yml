@@ -1,7 +1,15 @@
-# golangci-lint supplies the cyclomatic-complexity gate. The pre-commit hook
-# runs it with --new-from-merge-base=main, so the limit applies to new and
-# modified functions while the pre-existing high-complexity parsing core is
-# grandfathered until someone edits it.
+# golangci-lint supplies the cyclomatic-complexity gate.
+#
+# The limit applies repo-wide. The 21 functions that already exceed it carry an
+# explicit //nolint:gocyclo naming their complexity and the issue tracking their
+# reduction, so the exemption is per function rather than per file or per diff.
+#
+# This deliberately does not use --new-from-merge-base: gocyclo reports at the
+# function declaration line, so a diff-line filter misses complexity added to an
+# existing function's body while its signature stays put. Per-function nolint
+# catches that, and nolintlint below keeps the markers honest — an exemption
+# whose function drops under the limit is reported as unused, so the ratchet
+# only turns one way.
 #
 # Everything else (vet, revive, gosec, staticcheck, gocritic, gofumpt) is
 # already covered by its own hook in .pre-commit-config.yaml, so no default
@@ -12,6 +20,13 @@ linters:
   default: none
   enable:
     - gocyclo
+    - nolintlint
   settings:
     gocyclo:
       min-complexity: 8
+    nolintlint:
+      # An exemption must say which linter and why.
+      require-explanation: true
+      require-specific: true
+      # Report exemptions that are no longer needed, so refactors clean up.
+      allow-unused: false

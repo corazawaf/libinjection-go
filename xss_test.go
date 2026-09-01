@@ -101,7 +101,7 @@ const (
 	xss   = "xss"
 )
 
-func h5TypeToString(h5Type int) string {
+func h5TypeToString(h5Type int) string { //nolint:gocyclo // complexity 11, reduction tracked in #122
 	switch h5Type {
 	case html5TypeDataText:
 		return "DATA_TEXT"
@@ -190,7 +190,7 @@ type testCaseXSS struct {
 	data map[string]string
 }
 
-func BenchmarkXSSDriver(b *testing.B) {
+func BenchmarkXSSDriver(b *testing.B) { //nolint:gocyclo // complexity 9, reduction tracked in #122
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
 	if err != nil {

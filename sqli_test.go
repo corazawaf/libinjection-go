@@ -71,7 +71,7 @@ func getToken(state *sqliState, i int) *sqliToken {
 // sections defines the expected order of test file sections.
 var sections = [3]string{sectionTest, sectionInput, sectionExpected}
 
-func readTestData(filename string) map[string]string {
+func readTestData(filename string) map[string]string { //nolint:gocyclo // complexity 10, reduction tracked in #122
 	f, err := os.Open(filename)
 	if err != nil {
 		panic(err)
@@ -185,7 +185,7 @@ type testCaseSQLI struct {
 	data map[string]string
 }
 
-func BenchmarkSQLiDriver(b *testing.B) {
+func BenchmarkSQLiDriver(b *testing.B) { //nolint:gocyclo // complexity 12, reduction tracked in #122
 	baseDir := "./tests/"
 	dir, err := os.ReadDir(baseDir)
 	if err != nil {

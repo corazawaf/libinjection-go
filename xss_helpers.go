@@ -62,7 +62,7 @@ func upperRemoveNulls(buf []byte, s string) (n int, truncated bool) {
 	return n, truncated
 }
 
-func isBlackTag(s string) bool {
+func isBlackTag(s string) bool { //nolint:gocyclo // complexity 12, reduction tracked in #122
 	if len(s) < 3 {
 		return false
 	}
@@ -90,7 +90,7 @@ func isBlackTag(s string) bool {
 	return false
 }
 
-func isBlackAttr(s string) int {
+func isBlackAttr(s string) int { //nolint:gocyclo // complexity 12, reduction tracked in #122
 	var buf [maxNormalizedTokenLen]byte
 	n, truncated := upperRemoveNulls(buf[:], s)
 	if truncated {
@@ -129,7 +129,7 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
-func htmlDecodeByteAt(s string) (int, int) {
+func htmlDecodeByteAt(s string) (int, int) { //nolint:gocyclo // complexity 21, reduction tracked in #125
 	length := len(s)
 	val := 0
 
@@ -205,7 +205,7 @@ func htmlDecodeByteAt(s string) (int, int) {
 // a all uppercase c-string (null terminated), case insensitive!
 //
 // also ignore any embedded nulls in the HTML string!
-func htmlEncodeStartsWith(a, b string) bool {
+func htmlEncodeStartsWith(a, b string) bool { //nolint:gocyclo // complexity 10, reduction tracked in #122
 	var (
 		first  = true
 		pos    = 0

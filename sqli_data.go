@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func parseQStringCore(s *sqliState, offset int) int {
+func parseQStringCore(s *sqliState, offset int) int { //nolint:gocyclo // complexity 12, reduction tracked in #122
 	pos := s.pos + offset
 
 	// if we are already at the end of the string
@@ -55,7 +55,7 @@ func parseByteFunctions(s *sqliState, parse byte) int {
 	return byteParsers[parse](s)
 }
 
-func buildByteParsers() []byteParser {
+func buildByteParsers() []byteParser { //nolint:gocyclo // complexity 65, reduction tracked in #128
 	parsers := make([]byteParser, 256)
 	for i := 0; i < 256; i++ {
 		switch i {
