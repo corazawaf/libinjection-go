@@ -667,7 +667,6 @@ func (s *sqliState) tokenize() bool {
 //
 // return TRUE if SQLi, false otherwise
 func (s *sqliState) blacklist() bool {
-
 	length := len(s.fingerprint)
 	if length < 1 {
 		return false

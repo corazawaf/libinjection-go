@@ -57,7 +57,7 @@ func TestIsXSS(t *testing.T) {
 		{input: "<svg onload=alert(1)>", isXSS: true},
 		{input: "<svganimate>", isXSS: true},
 		// True negatives
-		{input: "<!--xml-->", isXSS: false},  // tokenLen=3, doesn't reach XML check
+		{input: "<!--xml-->", isXSS: false},   // tokenLen=3, doesn't reach XML check
 		{input: "<!--?xml -->", isXSS: false}, // "xml" not at start of token
 		{input: "<!--axml -->", isXSS: false}, // "xml" not at start of token
 		{input: "myvar=onfoobar==", isXSS: false},
@@ -137,9 +137,7 @@ func printHTML5Token(h *h5State) string {
 
 func runXSSTest(t testing.TB, data map[string]string, filename, flag string) {
 	t.Helper()
-	var (
-		actual = ""
-	)
+	actual := ""
 
 	switch flag {
 	case xss:

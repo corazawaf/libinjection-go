@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-var wordAcceptTable = buildAcceptTable(" []{}<>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r\"\240\000")
-var varAcceptTable = buildAcceptTable(" <>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r'`\"")
+var (
+	wordAcceptTable = buildAcceptTable(" []{}<>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r\"\240\000")
+	varAcceptTable  = buildAcceptTable(" <>:\\?=@!#~+-*/&|^%(),';\t\n\v\f\r'`\"")
+)
 
 func parseEolComment(s *sqliState) int {
 	index := strings.IndexByte(s.input[s.pos:], '\n')

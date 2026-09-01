@@ -164,7 +164,6 @@ func (h *h5State) stateCData() bool {
 			pos = pos + index + 1
 		}
 	}
-
 }
 
 func (h *h5State) stateDoctype() bool {
