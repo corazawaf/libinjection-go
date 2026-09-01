@@ -142,7 +142,8 @@ func TestStateTagOpenNullChar(t *testing.T) {
 	// "<\x00div>" – null byte as first char after '<' is passed to stateTagName,
 	// which emits a TagNameOpen token ("\x00div", len=4) followed by TagNameClose (len=1).
 	got := nextTokenInfos("<\x00div>", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 4},
 		h5TokenInfo{html5TypeTagNameClose, 1},
 	)
@@ -155,7 +156,8 @@ func TestStateTagOpenDefaultNonZeroPos(t *testing.T) {
 	// so stateTagOpen emits a DataText token for the '<' (len=1), then stateData
 	// emits the remaining "1foo>" as another DataText token (len=5).
 	got := nextTokenInfos("<1foo>", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeDataText, 1},
 		h5TokenInfo{html5TypeDataText, 5},
 	)
@@ -191,7 +193,8 @@ func TestStateAfterAttributeNameEOF(t *testing.T) {
 	// stateAttributeName sets state to stateAfterAttributeName; skipWhite runs out.
 	// Expected: TagNameOpen "div" (len=3) + AttrName "foo" (len=3).
 	got := nextTokenInfos("<div foo   ", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 3},
 		h5TokenInfo{html5TypeAttrName, 3},
 	)
@@ -203,7 +206,8 @@ func TestStateAfterAttributeNameSlash(t *testing.T) {
 	// stateSelfClosingStartTag, which emits a TagNameSelfClose token (len=2 for "/>").
 	// Expected: TagNameOpen (len=3), AttrName (len=3), TagNameSelfClose (len=2).
 	got := nextTokenInfos("<div foo />", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 3},
 		h5TokenInfo{html5TypeAttrName, 3},
 		h5TokenInfo{html5TypeTagNameSelfClose, 2},
@@ -215,7 +219,8 @@ func TestStateAfterAttributeNameGT(t *testing.T) {
 	// "<div foo >" – '>' after whitespace following attribute name calls stateTagNameClose.
 	// Expected: TagNameOpen (len=3), AttrName (len=3), TagNameClose (len=1).
 	got := nextTokenInfos("<div foo >", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 3},
 		h5TokenInfo{html5TypeAttrName, 3},
 		h5TokenInfo{html5TypeTagNameClose, 1},
@@ -228,7 +233,8 @@ func TestStateBeforeAttributeValueEOF(t *testing.T) {
 	// and stateBeforeAttributeValue returns false.
 	// Expected: TagNameOpen "div" (len=3) + AttrName "href" (len=4).
 	got := nextTokenInfos("<div href=   ", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 3},
 		h5TokenInfo{html5TypeAttrName, 4},
 	)
@@ -241,7 +247,8 @@ func TestStateBeforeAttributeNameSlashContinue(t *testing.T) {
 	// "foo" is parsed as an attribute name followed by '>'.
 	// Expected: TagNameOpen (len=3), AttrName (len=3), TagNameClose (len=1).
 	got := nextTokenInfos("<div / foo>", html5FlagsDataState)
-	checkTokens(t, got,
+	checkTokens(
+		t, got,
 		h5TokenInfo{html5TypeTagNameOpen, 3},
 		h5TokenInfo{html5TypeAttrName, 3},
 		h5TokenInfo{html5TypeTagNameClose, 1},
