@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.3](https://github.com/corazawaf/libinjection-go/compare/v0.3.2...v0.3.3) (2026-09-01)
+
+
+### Bug Fixes
+
+* use the local cursor in the stateCData bounds guard ([#130](https://github.com/corazawaf/libinjection-go/issues/130)) ([c91e215](https://github.com/corazawaf/libinjection-go/commit/c91e2154f4313cb7bc3205dffe6080ff092299cc))
+
+
+### Performance Improvements
+
+* pool allocations + O(1) attr lookup + DataState prefilter ([#114](https://github.com/corazawaf/libinjection-go/issues/114)) ([77d5170](https://github.com/corazawaf/libinjection-go/commit/77d51709d56dab69d2c909add081b06bc3619c5a))
+
 ## [0.3.2](https://github.com/corazawaf/libinjection-go/compare/v0.3.1...v0.3.2) (2026-02-23)
 
 
