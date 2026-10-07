@@ -53,7 +53,7 @@ func (t *sqliToken) parseStringCore(s string, length, pos, offset int, delimiter
 			t.assign(sqliTokenTypeString, pos+offset, length-pos-offset, s[pos+offset:])
 			t.strClose = byteNull
 			return length
-		case isBackslashEscaped(s[pos+offset : pos+offset+strings.Index(s[pos+offset:], str)]):
+		case isBackslashEscaped(s[pos+offset : len(s)-len(str)]):
 			// keep going, move ahead one character
 			str = str[1:]
 			continue
