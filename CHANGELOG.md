@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/corazawaf/libinjection-go/compare/v0.3.4...v0.3.5) (2026-10-08)
+
+
+### Bug Fixes
+
+* restore upstream parity in the 1c whitelist and q-string delimiter check ([#135](https://github.com/corazawaf/libinjection-go/issues/135)) ([dcfc067](https://github.com/corazawaf/libinjection-go/commit/dcfc0677ef1314df245b4aac42b312f9e471406c))
+
 ## [0.3.4](https://github.com/corazawaf/libinjection-go/compare/v0.3.3...v0.3.4) (2026-10-07)
 
 
