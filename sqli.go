@@ -751,7 +751,7 @@ func (s *sqliState) notWhitelist() bool {
 		// if '1c' ends with '/x' then it's SQLi
 		if s.tokenVec[0].category == sqliTokenTypeNumber &&
 			s.tokenVec[1].category == sqliTokenTypeComment &&
-			s.tokenVec[1].val[0] != '/' {
+			s.tokenVec[1].val[0] == '/' {
 			return true
 		}
 

@@ -365,7 +365,8 @@ func TestNotWhitelistEdgeCases(t *testing.T) {
 func TestNotWhitelistDirectState(t *testing.T) {
 	// Construct a synthetic "1c" fingerprint state where:
 	//   - tokenVec[0] is a number of length 1
-	//   - tokenVec[1] is a block-style comment (val starts with '/')
+	//   - tokenVec[1] is a dash-style comment (val starts with '-'); a block
+	//     comment would return true before reaching these branches
 	//   - statsTokens == 2 (no folding)
 	// The char at s.input[1] is '-', which bypasses the '/' and whitespace checks
 	// and reaches the double-dash check or the final return-false path.
@@ -377,7 +378,7 @@ func TestNotWhitelistDirectState(t *testing.T) {
 		s.tokenVec[0].category = sqliTokenTypeNumber
 		s.tokenVec[0].len = 1
 		s.tokenVec[1].category = sqliTokenTypeComment
-		s.tokenVec[1].val = "/"
+		s.tokenVec[1].val = "-"
 		s.tokenVec[1].len = 1
 		return s
 	}

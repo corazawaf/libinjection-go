@@ -18,9 +18,9 @@ func parseQStringCore(s *sqliState, offset int) int {
 	}
 
 	ch := s.input[pos+2]
-	// the ch >127 is un-needed since
-	// we assume char is signed
-	if ch < 33 {
+	// upstream C relies on char being signed so that bytes >= 0x80 fail the
+	// ch < 33 check; Go bytes are unsigned, so check the upper bound explicitly
+	if ch < 33 || ch > 127 {
 		return parseWord(s)
 	}
 
