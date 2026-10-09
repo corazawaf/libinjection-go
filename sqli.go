@@ -735,9 +735,10 @@ func (s *sqliState) notWhitelist() bool {
 			return s.statsTokens != 2
 		}
 
-		// if 'comment' is '#' ignore.. too many FP
+		// Keep ordinary hash text benign; a numeric prefix can remove a
+		// trusted SQL suffix in MySQL.
 		if s.tokenVec[1].val[0] == '#' {
-			return false
+			return s.tokenVec[0].category == sqliTokenTypeNumber
 		}
 
 		// for fingerprint like 'nc', only comments of /x are treated
@@ -772,23 +773,13 @@ func (s *sqliState) notWhitelist() bool {
 				return true
 			}
 
-			// we check that next character after the number is either whitespace,
-			// or '/' or a '-' ==> SQLi
-			ch := s.input[s.tokenVec[0].len]
-			if ch <= 32 {
-				// next char was whitespace,e.g. "1234 --"
-				// this isn't exactly correct. ideally we should skip over all whitespace
-				// but this seems to be ok for now
-				return true
+			// The number need not begin at input offset zero.
+			numberEnd := s.tokenVec[0].pos + s.tokenVec[0].len
+			if numberEnd >= len(s.input) {
+				return false
 			}
-			if ch == '/' && s.input[s.tokenVec[0].len+1] == '*' {
-				return true
-			}
-			if ch == '-' && s.input[s.tokenVec[0].len+1] == '-' {
-				return true
-			}
-
-			return false
+			suffix := s.input[numberEnd:]
+			return suffix[0] <= 32 || strings.HasPrefix(suffix, "/*") || strings.HasPrefix(suffix, "--")
 		}
 
 		// detect obvious SQLi scans.. many people put '--' in plain text
@@ -820,7 +811,8 @@ func (s *sqliState) notWhitelist() bool {
 			// 'sexy and 17' not SQLi
 			// 'sexy and 17<18' SQLi
 			if s.statsTokens == 3 {
-				return false
+				// Numeric OR can make a numeric-sink predicate true without '='.
+				return s.fingerprint == "1&1" && toUpperCmp("OR", s.tokenVec[1].val)
 			}
 		}
 		if s.tokenVec[1].category == sqliTokenTypeKeyword && (s.tokenVec[1].len < 5 || !toUpperCmp("INTO", s.tokenVec[1].val[:4])) {

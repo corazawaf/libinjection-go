@@ -17,7 +17,8 @@ func TestUpstreamParity(t *testing.T) {
 		{"1c block comment, hex number, leading space", " 0x1/*", "1c", true},
 		{"1c block comment", "1/*", "1c", true},
 		{"1c dash comment", "1--", "1c", true},
-		{"1c hash comment is not SQLi", "1#x", "", false},
+		// Numeric hash comments intentionally depart from C's suppression;
+		// their hardened verdict is covered by TestIsSQLiSecurityRegressions.
 		// parseQStringCore: a q-string delimiter byte >= 0x80 must fall back to
 		// parseWord, as it does in C where char is signed.
 		{"q-string delimiter above 0x7f", "q'\xe9' union /*!50000select*/ 1", "X", true},

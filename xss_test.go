@@ -308,3 +308,38 @@ func TestIsXSSCDataBounds(t *testing.T) {
 		})
 	}
 }
+
+func TestIsXSSURLControlReferences(t *testing.T) {
+	cases := []struct {
+		name, value string
+		detected    bool
+	}{
+		{"literal tab", "j\tavascript:alert(1)", true},
+		{"literal carriage return", "j\ravascript:alert(1)", true},
+		{"literal newline", "j\navascript:alert(1)", true},
+		{"decimal tab", "j&#9;avascript:alert(1)", true},
+		{"hex tab", "j&#x09;avascript:alert(1)", true},
+		{"decimal carriage return", "j&#13;avascript:alert(1)", true},
+		{"hex carriage return", "j&#x0d;avascript:alert(1)", true},
+		{"named tab", "j&Tab;avascript:alert(1)", true},
+		{"named newline", "j&NewLine;avascript:alert(1)", true},
+		{"multiple control references", "j&Tab;a&#13;v&NewLine;ascript:alert(1)", true},
+		{"existing numeric newline", "j&#10;avascript:alert(1)", true},
+		{"ordinary internal space", "j avascript:alert(1)", false},
+		{"numeric internal space", "j&#32;avascript:alert(1)", false},
+		{"vertical tab is not removed", "j&#11;avascript:alert(1)", false},
+		{"form feed is not removed", "j&#12;avascript:alert(1)", false},
+		{"named reference is case sensitive", "j&tab;avascript:alert(1)", false},
+		{"named tab requires semicolon", "j&Tabavascript:alert(1)", false},
+		{"named newline requires semicolon", "j&NewLineavascript:alert(1)", false},
+		{"HTTPS path containing scheme text", "https://example.test/j&Tab;avascript:alert(1)", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			input := `<a href="` + tc.value + `">open</a>`
+			if detected := IsXSS(input); detected != tc.detected {
+				t.Errorf("IsXSS(%q) = %v, want %v", input, detected, tc.detected)
+			}
+		})
+	}
+}

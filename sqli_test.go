@@ -399,3 +399,43 @@ func TestNotWhitelistDirectState(t *testing.T) {
 		}
 	})
 }
+
+func TestIsSQLiSecurityRegressions(t *testing.T) {
+	cases := []struct {
+		name, input, fingerprint string
+		detected                 bool
+	}{
+		{"leading tab before numeric dash comment", "\t1--", "1c", true},
+		{"leading spaces before numeric dash comment", "  12--", "1c", true},
+		{"leading newline before numeric dash comment", "\n1-- ", "1c", true},
+		{"numeric OR", "1 OR 1", "1&1", true},
+		{"numeric OR case insensitive", "1 oR 2", "1&1", true},
+		{"numeric OR with tabs", "1\tOR\t1", "1&1", true},
+		{"existing numeric comparison", "1 OR 2>1", "1&1", true},
+		{"numeric hash comment", "1#", "1c", true},
+		{"numeric hash comment C suppression", "1#x", "1c", true},
+		{"numeric hash comment with text", "1#comment", "1c", true},
+		{"leading whitespace before numeric hash comment", "\t1#comment", "1c", true},
+		{"MariaDB executable comment", "/*M! 1 OR 1 */", "X", true},
+		{"MariaDB versioned executable comment", "/*M!100100 1 OR 1 */", "X", true},
+		{"MariaDB unterminated executable comment", "/*M! 1 OR 1", "X", true},
+		{"existing MySQL executable comment", "/*! 1 OR 1 */", "X", true},
+		{"ordinary block comment", "/* 1 OR 1 */", "", false},
+		{"ordinary M-prefixed block comment", "/*M 1 OR 1 */", "", false},
+		{"bareword hash comment", "word#comment", "", false},
+		{"C sharp text", "C#", "", false},
+		{"text AND number", "sexy and 17", "", false},
+		{"text OR number", "sexy or 17", "", false},
+		{"numeric AND suppression retained", "1 AND 1", "", false},
+		{"ordinary text with dashes", "hello--world", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			detected, fingerprint := IsSQLi(tc.input)
+			if detected != tc.detected || fingerprint != tc.fingerprint {
+				t.Errorf("IsSQLi(%q) = (%v, %q), want (%v, %q)",
+					tc.input, detected, fingerprint, tc.detected, tc.fingerprint)
+			}
+		})
+	}
+}
