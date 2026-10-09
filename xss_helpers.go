@@ -126,6 +126,17 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
+// Only these named references decode to characters removed by URL parsing.
+func htmlDecodeNamedURLControlAt(s string) (int, int) {
+	if strings.HasPrefix(s, "&Tab;") {
+		return '\t', len("&Tab;")
+	}
+	if strings.HasPrefix(s, "&NewLine;") {
+		return '\n', len("&NewLine;")
+	}
+	return '&', 1
+}
+
 //nolint:gocyclo // complexity 21, reduction tracked in #125
 func htmlDecodeByteAt(s string) (int, int) {
 	length := len(s)
@@ -140,9 +151,7 @@ func htmlDecodeByteAt(s string) (int, int) {
 	}
 
 	if s[1] != '#' || len(s) < 3 {
-		// normally this would be for named entities
-		// but for this case we don't actually care
-		return '&', 1
+		return htmlDecodeNamedURLControlAt(s)
 	}
 
 	if s[2] == 'x' || s[2] == 'X' {
@@ -224,9 +233,8 @@ func htmlEncodeStartsWith(a, b string) bool {
 		}
 		first = false
 
-		if cb == 0 || cb == 10 {
-			// always ignore null characters in user input
-			// always ignore vertical tab characters in user input
+		if cb == 0 || cb == '\t' || cb == '\n' || cb == '\r' {
+			// Retain NUL compatibility; URLs remove internal TAB, LF and CR.
 			continue
 		}
 		if cb >= 'a' && cb <= 'z' {

@@ -1,7 +1,7 @@
 --TEST--
-'1c' type has too many false positives using '#' comment
+Numeric hash comments remove a trusted SQL suffix in MySQL; intentionally
+detect this case despite the upstream C false-positive suppression.
 --INPUT--
 1# blah blah
 --EXPECTED--
-
-
+1c
