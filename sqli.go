@@ -179,7 +179,7 @@ func (s *sqliState) merge(tokenA, tokenB *sqliToken) bool {
 
 // parses and folds input, up to 5 tokens
 //
-//nolint:gocyclo // complexity 178, reduction tracked in #129
+//nolint:gocyclo // complexity 179, reduction tracked in #129
 func (s *sqliState) fold() int {
 	var (
 		pos         = 0 // pos is the position of where whe Next token goes
@@ -368,9 +368,11 @@ func (s *sqliState) fold() int {
 		case s.tokenVec[left].category == sqliTokenTypeOperator &&
 			(toUpperCmp("LIKE", s.tokenVec[left].val[:s.tokenVec[left].len]) ||
 				toUpperCmp("NOT LIKE", s.tokenVec[left].val[:s.tokenVec[left].len])):
-			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis {
+			if s.tokenVec[left+1].category == sqliTokenTypeLeftParenthesis && !isOperandBefore(s, left) {
 				// SELECT LIKE(...
-				// it's a function
+				// it's a function.
+				// After an operand ("1 LIKE (SELECT 1)") it can only be the
+				// binary operator, so leave it alone.
 				s.tokenVec[left].category = sqliTokenTypeFunction
 			}
 		case s.tokenVec[left].category == sqliTokenTypeSQLType &&
@@ -922,4 +924,20 @@ func IsSQLi(input string) (bool, string) {
 		return true, state.fingerprint
 	}
 	return false, ""
+}
+
+// isOperandBefore reports whether the committed token before position left is
+// an operand (number, string, bareword, variable or closing parenthesis).
+// Tokens below left are already folded output, so left-1 is the real
+// predecessor.
+func isOperandBefore(s *sqliState, left int) bool {
+	if left == 0 {
+		return false
+	}
+	switch s.tokenVec[left-1].category {
+	case sqliTokenTypeNumber, sqliTokenTypeString, sqliTokenTypeBareWord,
+		sqliTokenTypeVariable, sqliTokenTypeRightParenthesis:
+		return true
+	}
+	return false
 }
