@@ -24,6 +24,17 @@ func TestUpstreamParity(t *testing.T) {
 		// parseStringCore: the closing quote is judged at its real position,
 		// not at the first occurrence of the same suffix text.
 		{"backslash-escaped quote at real position", `-(top<>thendrop1.5\'--null'--`, "sc", true},
+		// strLenSpn/strLenCSpn: C's strchr also matches the NUL terminating
+		// the accept set, so a NUL byte belongs to every accept set and ends
+		// every complement span. The span helpers used to split "0x<NUL>1"
+		// into bareword "0x" plus number "1", missing the fingerprints below.
+		{"NUL inside hex number", "1 or 0x\x001=1-- ", "1&1c", true},
+		{"NUL inside hex number after quote", "'=0X\x00#", "so1c", true},
+		{"NUL inside hex number, mixed payload", "=/Y2 \n'=c0\n0X\x00#XY-b%\\`>Y `  %a*", "son1o", true},
+		{"NUL inside hex number, benign alone", "0x\x001", "", false},
+		// The variable reject set doesn't spell NUL, but C stops the span
+		// there anyway; the verdict stays benign either way.
+		{"NUL inside variable name", "@\x00name", "", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

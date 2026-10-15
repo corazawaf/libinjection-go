@@ -54,6 +54,12 @@ func isByteWhite(ch byte) bool {
 // regexp.match(str, "[ABC]*")
 func strLenSpn(s string, length int, accept string) int {
 	for i := 0; i < length; i++ {
+		if s[i] == 0 {
+			// C's strchr(accept, ch) also matches the NUL terminating
+			// `accept`, so a NUL byte belongs to every accept set and does
+			// not end the span: "0x<NUL>1" stays one hex number.
+			continue
+		}
 		if strings.IndexByte(accept, s[i]) == -1 {
 			return i
 		}
@@ -64,7 +70,9 @@ func strLenSpn(s string, length int, accept string) int {
 
 func strLenCSpn(s string, length int, accept []byte) int {
 	for i := 0; i < length; i++ {
-		if accept[s[i]] == 1 {
+		if s[i] == 0 || accept[s[i]] == 1 {
+			// Same strchr semantics, from the rejecting side: a NUL byte
+			// ends every complement span, spelled out in the table or not.
 			return i
 		}
 	}
