@@ -1,0 +1,8 @@
+--TEST--
+MySQL double-dash comment at end of input
+--INPUT--
+SELECT 1 --
+--EXPECTED--
+E SELECT
+1 1
+c --
