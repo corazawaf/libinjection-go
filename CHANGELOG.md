@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.6](https://github.com/corazawaf/libinjection-go/compare/v0.3.5...v0.3.6) (2026-10-16)
+
+
+### Bug Fixes
+
+* match C strchr NUL semantics in SQLi span helpers ([#140](https://github.com/corazawaf/libinjection-go/issues/140)) ([146d02f](https://github.com/corazawaf/libinjection-go/commit/146d02fa319991b7af3b80c07b14d236decff34d))
+* treat LIKE as an operator when it follows an operand ([#138](https://github.com/corazawaf/libinjection-go/issues/138)) ([24322d8](https://github.com/corazawaf/libinjection-go/commit/24322d8dcaccb6ce078151937741fb4f7e462a55))
+
 ## [0.3.5](https://github.com/corazawaf/libinjection-go/compare/v0.3.4...v0.3.5) (2026-10-08)
 
 
