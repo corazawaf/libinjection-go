@@ -1,0 +1,6 @@
+--TEST--
+hex carriage return
+--INPUT--
+<a href="j&#x0d;avascript:alert(1)">open</a>
+--EXPECTED--
+1

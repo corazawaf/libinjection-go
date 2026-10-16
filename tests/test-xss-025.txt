@@ -1,0 +1,6 @@
+--TEST--
+HTTPS path containing scheme text
+--INPUT--
+<a href="https://example.test/j&Tab;avascript:alert(1)">open</a>
+--EXPECTED--
+0

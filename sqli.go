@@ -737,10 +737,9 @@ func (s *sqliState) notWhitelist() bool {
 			return s.statsTokens != 2
 		}
 
-		// Keep ordinary hash text benign; a numeric prefix can remove a
-		// trusted SQL suffix in MySQL.
+		// if 'comment' is '#' ignore.. too many FP
 		if s.tokenVec[1].val[0] == '#' {
-			return s.tokenVec[0].category == sqliTokenTypeNumber
+			return false
 		}
 
 		// for fingerprint like 'nc', only comments of /x are treated
@@ -813,8 +812,7 @@ func (s *sqliState) notWhitelist() bool {
 			// 'sexy and 17' not SQLi
 			// 'sexy and 17<18' SQLi
 			if s.statsTokens == 3 {
-				// Numeric OR can make a numeric-sink predicate true without '='.
-				return s.fingerprint == "1&1" && toUpperCmp("OR", s.tokenVec[1].val)
+				return false
 			}
 		}
 		if s.tokenVec[1].category == sqliTokenTypeKeyword && (s.tokenVec[1].len < 5 || !toUpperCmp("INTO", s.tokenVec[1].val[:4])) {

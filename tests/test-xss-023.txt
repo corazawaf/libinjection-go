@@ -1,0 +1,6 @@
+--TEST--
+named tab requires semicolon
+--INPUT--
+<a href="j&Tabavascript:alert(1)">open</a>
+--EXPECTED--
+0

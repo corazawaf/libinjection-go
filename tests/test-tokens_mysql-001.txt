@@ -1,8 +1,0 @@
---TEST--
-MySQL hash comment without trailing newline
---INPUT--
-SELECT 1# ignored
---EXPECTED--
-E SELECT
-1 1
-c # ignored

@@ -1,0 +1,5 @@
+--TEST--
+bareword hash comment
+--INPUT--
+word#comment
+--EXPECTED--

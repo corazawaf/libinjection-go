@@ -1,0 +1,6 @@
+--TEST--
+numeric internal space
+--INPUT--
+<a href="j&#32;avascript:alert(1)">open</a>
+--EXPECTED--
+0

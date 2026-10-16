@@ -104,9 +104,11 @@ func isMysqlComment(s string, pos int) bool {
 		return false
 	}
 
-	// MariaDB also executes the M-prefixed form, with an optional version.
-	body := s[pos+2:]
-	return strings.HasPrefix(body, "!") || strings.HasPrefix(body, "M!")
+	if s[pos+2] != '!' {
+		return false
+	}
+
+	return true
 }
 
 func toUpperCmp(expectedUpper, s string) bool {
