@@ -774,23 +774,13 @@ func (s *sqliState) notWhitelist() bool {
 				return true
 			}
 
-			// we check that next character after the number is either whitespace,
-			// or '/' or a '-' ==> SQLi
-			ch := s.input[s.tokenVec[0].len]
-			if ch <= 32 {
-				// next char was whitespace,e.g. "1234 --"
-				// this isn't exactly correct. ideally we should skip over all whitespace
-				// but this seems to be ok for now
-				return true
+			// The number need not begin at input offset zero.
+			numberEnd := s.tokenVec[0].pos + s.tokenVec[0].len
+			if numberEnd >= len(s.input) {
+				return false
 			}
-			if ch == '/' && s.input[s.tokenVec[0].len+1] == '*' {
-				return true
-			}
-			if ch == '-' && s.input[s.tokenVec[0].len+1] == '-' {
-				return true
-			}
-
-			return false
+			suffix := s.input[numberEnd:]
+			return suffix[0] <= 32 || strings.HasPrefix(suffix, "/*") || strings.HasPrefix(suffix, "--")
 		}
 
 		// detect obvious SQLi scans.. many people put '--' in plain text

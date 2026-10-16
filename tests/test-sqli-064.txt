@@ -1,0 +1,5 @@
+--TEST--
+ordinary text with dashes
+--INPUT--
+hello--world
+--EXPECTED--

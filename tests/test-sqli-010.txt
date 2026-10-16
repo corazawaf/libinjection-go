@@ -3,5 +3,3 @@
 --INPUT--
 1# blah blah
 --EXPECTED--
-
-

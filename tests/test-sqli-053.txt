@@ -1,0 +1,6 @@
+--TEST--
+leading spaces before numeric dash comment
+--INPUT--
+  12--
+--EXPECTED--
+1c

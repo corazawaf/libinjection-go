@@ -1,0 +1,5 @@
+--TEST--
+C sharp text
+--INPUT--
+C#
+--EXPECTED--

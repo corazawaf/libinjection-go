@@ -1,0 +1,6 @@
+--TEST--
+vertical tab is not removed
+--INPUT--
+<a href="j&#11;avascript:alert(1)">open</a>
+--EXPECTED--
+0

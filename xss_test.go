@@ -308,3 +308,9 @@ func TestIsXSSCDataBounds(t *testing.T) {
 		})
 	}
 }
+
+func TestIsXSSURLCarriageReturn(t *testing.T) {
+	if !IsXSS("<a href=\"j\ravascript:alert(1)\">open</a>") {
+		t.Error("expected carriage return in a URL scheme to be detected")
+	}
+}

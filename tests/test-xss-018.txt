@@ -1,0 +1,6 @@
+--TEST--
+ordinary internal space
+--INPUT--
+<a href="j avascript:alert(1)">open</a>
+--EXPECTED--
+0

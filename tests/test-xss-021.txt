@@ -1,0 +1,6 @@
+--TEST--
+form feed is not removed
+--INPUT--
+<a href="j&#12;avascript:alert(1)">open</a>
+--EXPECTED--
+0

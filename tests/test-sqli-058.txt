@@ -1,0 +1,5 @@
+--TEST--
+ordinary M-prefixed block comment
+--INPUT--
+/*M 1 OR 1 */
+--EXPECTED--

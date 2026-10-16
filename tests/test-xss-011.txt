@@ -1,0 +1,6 @@
+--TEST--
+hex tab
+--INPUT--
+<a href="j&#x09;avascript:alert(1)">open</a>
+--EXPECTED--
+1

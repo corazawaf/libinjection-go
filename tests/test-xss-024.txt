@@ -1,0 +1,6 @@
+--TEST--
+named newline requires semicolon
+--INPUT--
+<a href="j&NewLineavascript:alert(1)">open</a>
+--EXPECTED--
+0

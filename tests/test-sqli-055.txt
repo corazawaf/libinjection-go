@@ -1,0 +1,6 @@
+--TEST--
+existing numeric comparison
+--INPUT--
+1 OR 2>1
+--EXPECTED--
+1&1

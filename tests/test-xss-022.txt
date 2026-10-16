@@ -1,0 +1,6 @@
+--TEST--
+named reference is case sensitive
+--INPUT--
+<a href="j&tab;avascript:alert(1)">open</a>
+--EXPECTED--
+0

@@ -1,0 +1,5 @@
+--TEST--
+numeric AND suppression retained
+--INPUT--
+1 AND 1
+--EXPECTED--

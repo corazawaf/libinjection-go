@@ -1,0 +1,6 @@
+--TEST--
+named tab
+--INPUT--
+<a href="j&Tab;avascript:alert(1)">open</a>
+--EXPECTED--
+1

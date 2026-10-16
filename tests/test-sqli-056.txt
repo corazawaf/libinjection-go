@@ -1,0 +1,6 @@
+--TEST--
+existing MySQL executable comment
+--INPUT--
+/*! 1 OR 1 */
+--EXPECTED--
+X

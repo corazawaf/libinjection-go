@@ -1,0 +1,5 @@
+--TEST--
+text AND number
+--INPUT--
+sexy and 17
+--EXPECTED--

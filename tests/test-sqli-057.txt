@@ -1,0 +1,5 @@
+--TEST--
+ordinary block comment
+--INPUT--
+/* 1 OR 1 */
+--EXPECTED--

@@ -1,0 +1,6 @@
+--TEST--
+multiple control references
+--INPUT--
+<a href="j&Tab;a&#13;v&NewLine;ascript:alert(1)">open</a>
+--EXPECTED--
+1

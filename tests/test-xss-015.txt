@@ -1,0 +1,6 @@
+--TEST--
+named newline
+--INPUT--
+<a href="j&NewLine;avascript:alert(1)">open</a>
+--EXPECTED--
+1

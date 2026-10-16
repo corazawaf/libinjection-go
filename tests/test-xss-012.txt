@@ -1,0 +1,6 @@
+--TEST--
+decimal carriage return
+--INPUT--
+<a href="j&#13;avascript:alert(1)">open</a>
+--EXPECTED--
+1
