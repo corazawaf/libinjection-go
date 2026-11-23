@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.7](https://github.com/corazawaf/libinjection-go/compare/v0.3.6...v0.3.7) (2026-11-23)
+
+
+### Bug Fixes
+
+* **xss:** ignore TAB and CR in URL scheme checks (GHSA-3xx6-w25q-cx8h) ([abfbaad](https://github.com/corazawaf/libinjection-go/commit/abfbaada27b1c25476259ed081d317c2b7f47a5b))
+
 ## [0.3.6](https://github.com/corazawaf/libinjection-go/compare/v0.3.5...v0.3.6) (2026-11-17)
 
 
