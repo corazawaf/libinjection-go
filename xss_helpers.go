@@ -126,6 +126,30 @@ func isBlackAttr(s string) int {
 	return attributeTypeNone
 }
 
+// urlStrippedEntities are the only named entities that htmlDecodeByteAt
+// decodes: they produce characters that browsers strip from URLs (WHATWG URL
+// parsing), so leaving them encoded would let "ja&Tab;vascript:" bypass
+// isBlackURL. They match case-sensitively and only with the trailing ';', as
+// in the WHATWG entity table: "&tab;" and "&Tab" are not decoded by browsers.
+var urlStrippedEntities = []struct {
+	name string
+	val  int
+}{
+	{"&Tab;", '\t'},
+	{"&NewLine;", '\n'},
+}
+
+// decodeStrippedEntity returns the character and the number of bytes consumed
+// when s starts with one of urlStrippedEntities, or (0, 0) otherwise.
+func decodeStrippedEntity(s string) (int, int) {
+	for _, e := range urlStrippedEntities {
+		if strings.HasPrefix(s, e.name) {
+			return e.val, len(e.name)
+		}
+	}
+	return 0, 0
+}
+
 //nolint:gocyclo // complexity 21, reduction tracked in #125
 func htmlDecodeByteAt(s string) (int, int) {
 	length := len(s)
@@ -140,6 +164,9 @@ func htmlDecodeByteAt(s string) (int, int) {
 	}
 
 	if s[1] != '#' || len(s) < 3 {
+		if ch, consumed := decodeStrippedEntity(s); consumed > 0 {
+			return ch, consumed
+		}
 		// normally this would be for named entities
 		// but for this case we don't actually care
 		return '&', 1
@@ -202,7 +229,9 @@ func htmlDecodeByteAt(s string) (int, int) {
 // Does an HTML encoded  binary string (const char*, length) start with
 // a all uppercase c-string (null terminated), case insensitive!
 //
-// also ignore any embedded nulls in the HTML string!
+// also ignore any embedded nulls, TAB, LF and CR in the HTML string, since
+// browsers strip TAB, LF and CR anywhere in a URL! This helper is only used
+// for URL scheme prefixes (see isBlackURL).
 //
 //nolint:gocyclo // complexity 10, reduction tracked in #122
 func htmlEncodeStartsWith(a, b string) bool {
@@ -214,6 +243,10 @@ func htmlEncodeStartsWith(a, b string) bool {
 	)
 
 	for length > 0 {
+		if ai >= len(a) {
+			// already matched the full prefix
+			return true
+		}
 		cb, consumed := htmlDecodeByteAt(b[pos:])
 		pos += consumed
 		length -= consumed
@@ -224,22 +257,21 @@ func htmlEncodeStartsWith(a, b string) bool {
 		}
 		first = false
 
-		if cb == 0 || cb == 10 {
-			// always ignore null characters in user input
-			// always ignore vertical tab characters in user input
+		if cb == 0 || cb == 9 || cb == 10 || cb == 13 {
+			// ignore nulls; browsers strip TAB, LF and CR anywhere in a URL
 			continue
+		}
+		if cb > 255 {
+			// A reference above 0xFF is no ASCII letter. C truncates it to a
+			// char (&#330; -> 'J'); do not do that here.
+			return false
 		}
 		if cb >= 'a' && cb <= 'z' {
 			cb -= 0x20
 		}
-		// Mask to 8 bits to match C's implicit char truncation behavior.
-		ch := byte(cb & 0xFF)
 
-		if ai >= len(a) {
-			// already matched the full prefix
-			return true
-		}
-		if ch != a[ai] {
+		// cb is in 0..255 here; the mask only makes the conversion explicit
+		if byte(cb&0xFF) != a[ai] {
 			return false
 		}
 		ai++
